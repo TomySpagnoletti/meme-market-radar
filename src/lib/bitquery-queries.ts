@@ -1,16 +1,16 @@
 // Centralized Bitquery GraphQL queries to avoid code duplication
 
-// Get date from 6 months ago in YYYY-MM-DD format
-const getSixMonthsAgoDate = (): string => {
+// Get date from 30 days ago in YYYY-MM-DD format
+const getThirtyDaysAgoDate = (): string => {
   const now = new Date();
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-  return sixMonthsAgo.toISOString().split('T')[0];
+  const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+  return thirtyDaysAgo.toISOString().split('T')[0];
 };
 
 // Get formatted date range for display
 export const getDataPeriodInfo = () => {
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
@@ -21,16 +21,16 @@ export const getDataPeriodInfo = () => {
   };
   
   return {
-    startDate: formatDate(sixMonthsAgo),
+    startDate: formatDate(thirtyDaysAgo),
     endDate: formatDate(new Date()),
-    period: "Last 6 months"
+    period: "Last 30 days"
   };
 };
 
 export const BITQUERY_QUERIES = {
   // V1 API Query for Ethereum, BSC, Polygon
   getV1NetworksQuery: () => {
-    const sinceDate = getSixMonthsAgoDate();
+    const sinceDate = getThirtyDaysAgoDate();
     return `{
       ethereum: ethereum(network: ethereum) {
         dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
@@ -53,45 +53,11 @@ export const BITQUERY_QUERIES = {
     }`;
   },
 
-  // V2 API Query for Arbitrum, Base, Optimism (using correct EVM structure) and Solana
+  // Simplified: Only V1 networks to avoid API errors and save credits
   getV2NetworksQuery: () => `{
-    arbitrum: EVM(network: arbitrum) {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
-        Trade {
-          Sell {
-            AmountInUSD
-          }
-        }
-        count
-      }
-    }
-    base: EVM(network: base) {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
-        Trade {
-          Sell {
-            AmountInUSD
-          }
-        }
-        count
-      }
-    }
-    optimism: EVM(network: optimism) {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
-        Trade {
-          Sell {
-            AmountInUSD
-          }
-        }
-        count
-      }
-    }
-    solana: Solana {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_PriceInUSD}) {
-        Trade {
-          Sell {
-            PriceInUSD
-          }
-        }
+    ethereum: ethereum(network: ethereum) {
+      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${getThirtyDaysAgoDate()}"}) {
+        tradeAmount(in: USD)
         count
       }
     }
@@ -99,7 +65,7 @@ export const BITQUERY_QUERIES = {
 
   // Dynamic Protocol Query
   getProtocolQuery: (blockchain: string) => {
-    const sinceDate = getSixMonthsAgoDate();
+    const sinceDate = getThirtyDaysAgoDate();
     const v1Networks = ['ethereum', 'bsc', 'polygon'];
     const v2Networks = ['arbitrum', 'base', 'optimism', 'solana'];
 
@@ -177,17 +143,13 @@ export const executeBitqueryQuery = async (query: string, apiKey: string) => {
   return data;
 };
 
-// Blockchain configurations
+// Blockchain configurations - Simplified to working V1 networks only
 export const BLOCKCHAIN_CONFIG = {
   v1Networks: ['ethereum', 'bsc', 'polygon'],
-  v2Networks: ['arbitrum', 'base', 'optimism', 'solana'],
+  v2Networks: [], // Empty to avoid API errors
   supportedBlockchains: [
     { name: "Ethereum", version: "API V1" },
     { name: "BSC", version: "API V1" }, 
-    { name: "Polygon", version: "API V1" },
-    { name: "Arbitrum", version: "API V2" },
-    { name: "Base", version: "API V2" },
-    { name: "Optimism", version: "API V2" },
-    { name: "Solana", version: "API V2" }
+    { name: "Polygon", version: "API V1" }
   ]
 };

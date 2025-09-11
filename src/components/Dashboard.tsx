@@ -27,17 +27,11 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // STEP 1: V1 API call for confirmed networks (Ethereum, BSC, Polygon)
+      // Only V1 API call for confirmed working networks (Ethereum, BSC, Polygon)
       const v1Query = BITQUERY_QUERIES.getV1NetworksQuery();
 
-      // STEP 2: V2 API call for confirmed networks (Arbitrum, Base, Optimism, Solana)
-      const v2Query = BITQUERY_QUERIES.getV2NetworksQuery();
-
-      // Execute both API calls in parallel
-      const [v1Data, v2Data] = await Promise.all([
-        executeBitqueryQuery(v1Query, apiKey),
-        executeBitqueryQuery(v2Query, apiKey)
-      ]);
+      // Execute V1 API call only
+      const v1Data = await executeBitqueryQuery(v1Query, apiKey);
 
       // Process V1 data (Ethereum, BSC, Polygon)
       const volumes: Record<string, number> = {};
@@ -56,16 +50,12 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         }
       });
 
-      // V2 data processing - Corrected structure
-      BLOCKCHAIN_CONFIG.v2Networks.forEach(network => {
-        const networkData = v2Data.data?.[network];
-        const dexTrade = networkData?.DEXTrades?.[0];
+      // Only V1 data processing (Ethereum, BSC, Polygon)
+      BLOCKCHAIN_CONFIG.v1Networks.forEach(network => {
+        const networkData = v1Data.data?.[network];
+        const dexTrade = networkData?.dexTrades?.[0];
         if (dexTrade) {
-          if (network === 'solana') {
-            volumes[network] = dexTrade.Trade?.Sell?.PriceInUSD || 0;
-          } else {
-            volumes[network] = dexTrade.Trade?.Sell?.AmountInUSD || 0;
-          }
+          volumes[network] = dexTrade.tradeAmount || 0;
           transactions[network] = dexTrade.count || 0;
         } else {
           volumes[network] = 0;
@@ -214,16 +204,16 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
                     icon="zap"
                   />
                   <CryptoCard
-                    title="6-Month Volume"
+                    title="30-Day Volume"
                     value={data.volume24h}
-                    subtitle="Last 6 months"
+                    subtitle="Last 30 days"
                     trend="up"
                     icon="trending"
                   />
                   <CryptoCard
                     title="Transactions"
                     value={data.transactions}
-                    subtitle="Last 6 months"
+                    subtitle="Last 30 days"
                     trend="neutral"
                     icon="activity"
                   />
@@ -243,7 +233,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
                     <p className="text-muted-foreground">
                       With {data.topProtocol} as the main trading protocol, 
                       {data.topBlockchain} currently processes the highest volume of meme tokens 
-                      with {data.volume24h} in volume over the last 6 months.
+                      with {data.volume24h} in volume over the last 30 days.
                     </p>
                   </div>
                 </div>
