@@ -140,9 +140,9 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-main text-foreground">
+    <div className="min-h-screen bg-gradient-main text-foreground flex flex-col">
       {/* Header */}
-      <div className="bg-gradient-hero border-b border-border/50 p-6">
+      <div className="bg-gradient-hero border-b border-border/50 p-6 flex-grow">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -250,9 +250,14 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               <BlockchainAndDataValidator apiKey={apiKey} />
             </TabsContent>
           </Tabs>
-
-          {/* Supported Blockchains Section - Always visible */}
-          <div className="bg-gradient-card border border-border/50 rounded-lg p-4 mt-8">
+        </div>
+      </div>
+      
+      {/* Bottom section - Always visible and sticky at bottom */}
+      <div className="bg-gradient-hero border-t border-border/50 p-6 mt-auto">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Supported Blockchains Section */}
+          <div className="bg-gradient-card border border-border/50 rounded-lg p-4">
             <h3 className="text-lg font-semibold mb-3 text-center">Supported Networks</h3>
             <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
               {BLOCKCHAIN_CONFIG.supportedBlockchains.map((blockchain) => (
@@ -267,8 +272,8 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
             </div>
           </div>
 
-          {/* Footer - Always visible */}
-          <div className="text-center text-sm text-muted-foreground space-y-1 mt-6">
+          {/* Footer */}
+          <div className="text-center text-sm text-muted-foreground space-y-1">
             <p>Data provided by Bitquery • Updated on refresh</p>
             <p className="text-xs">
               Period: {getDataPeriodInfo().period} ({getDataPeriodInfo().startDate} - {getDataPeriodInfo().endDate})
