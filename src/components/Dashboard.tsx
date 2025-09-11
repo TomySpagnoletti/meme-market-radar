@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CryptoCard } from "./CryptoCard";
-import { BlockchainValidator } from "./BlockchainValidator";
+import { BlockchainAndDataValidator } from "./BlockchainAndDataValidator";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, LogOut, TrendingUp } from "lucide-react";
@@ -397,7 +397,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         </div>
 
         {/* Blockchain Validation Section */}
-        <BlockchainValidator apiKey={apiKey} />
+        <BlockchainAndDataValidator apiKey={apiKey} />
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
