@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CryptoCard } from "./CryptoCard";
+import { DebugPanel } from "./DebugPanel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, LogOut, TrendingUp } from "lucide-react";
@@ -19,6 +20,8 @@ interface DashboardProps {
 export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugVisible, setDebugVisible] = useState(false);
+  const [apiResponses, setApiResponses] = useState<any[]>([]);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -100,6 +103,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
 
       const blockchainsData = await firstResponse.json();
       console.log("Step 1 - All blockchains data:", blockchainsData);
+      setApiResponses(prev => [...prev, { step: 1, query: "blockchains", data: blockchainsData }]);
 
       // Process data to find top blockchain
       const volumes: Record<string, number> = {};
@@ -177,6 +181,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
 
       const protocolData = await secondResponse.json();
       console.log("Step 2 - Protocol data for", topBlockchain, ":", protocolData);
+      setApiResponses(prev => [...prev, { step: 2, query: "protocols", blockchain: topBlockchain, data: protocolData }]);
 
       // Extract leading protocol from the winning blockchain
       const topProtocol = topBlockchain === 'solana' 
@@ -285,14 +290,14 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
             <CryptoCard
               title="24h Volume"
               value={data.volume24h}
-              subtitle="+12.5%"
+              subtitle="Aggregated"
               trend="up"
               icon="trending"
             />
             <CryptoCard
               title="Transactions"
               value={data.transactions}
-              subtitle="Last 24h"
+              subtitle="All Networks"
               trend="neutral"
               icon="activity"
             />
@@ -351,6 +356,13 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           <p>Data provided by Bitquery • Updated in real-time</p>
         </div>
       </div>
+
+      {/* Debug Panel */}
+      <DebugPanel 
+        isVisible={debugVisible}
+        onToggle={() => setDebugVisible(!debugVisible)}
+        apiResponses={apiResponses}
+      />
     </div>
   );
 };
