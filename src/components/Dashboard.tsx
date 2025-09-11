@@ -262,7 +262,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               </div>
 
               <div className="text-center text-sm text-muted-foreground space-y-1">
-                <p>Data provided by Bitquery • Updated in real-time</p>
+                <p>Data provided by Bitquery • Updated on refresh</p>
                 <p className="text-xs">
                   Period: {getDataPeriodInfo().period} ({getDataPeriodInfo().startDate} - {getDataPeriodInfo().endDate})
                 </p>
