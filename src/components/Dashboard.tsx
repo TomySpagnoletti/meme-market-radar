@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { CryptoCard } from "./CryptoCard";
 import { BlockchainAndDataValidator } from "./BlockchainAndDataValidator";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, LogOut, TrendingUp } from "lucide-react";
 
@@ -179,7 +180,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           // Use V2 syntax
           if (blockchain === 'solana') {
             return `{
-              Solana(dataset: archive) {
+              Solana {
                 DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
                   Dex {
                     ProtocolName
@@ -193,7 +194,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
             }`;
           } else {
             return `{
-              EVM(network: ${blockchain}, dataset: archive) {
+              EVM(network: ${blockchain}) {
                 DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
                   Dex {
                     ProtocolName
@@ -369,13 +370,10 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           </div>
         </div>
 
-        {/* Supported Blockchains Section */}
-        <div className="bg-gradient-card border border-border/50 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-center">Supported Blockchains</h2>
-          <p className="text-muted-foreground text-center mb-6">
-            Data aggregated from all major blockchains for comprehensive meme token analytics
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {/* Supported Blockchains Section - Compact */}
+        <div className="bg-gradient-card border border-border/50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-3 text-center">Supported Networks</h3>
+          <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
             {[
               { name: "Ethereum", version: "V1" },
               { name: "BSC", version: "V1" }, 
@@ -387,22 +385,32 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
             ].map((blockchain) => (
               <div
                 key={blockchain.name}
-                className="bg-background/50 border border-border/30 rounded-lg p-3 text-center hover:bg-crypto-primary/10 transition-colors"
+                className="bg-background/50 border border-border/30 rounded-md p-2 text-center hover:bg-crypto-primary/10 transition-colors"
               >
-                <span className="text-sm font-medium block">{blockchain.name}</span>
-                <span className="text-xs text-muted-foreground">API {blockchain.version}</span>
+                <span className="text-xs font-medium block">{blockchain.name}</span>
+                <span className="text-xs text-muted-foreground">{blockchain.version}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Blockchain Validation Section */}
-        <BlockchainAndDataValidator apiKey={apiKey} />
-
-        {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground">
-          <p>Data provided by Bitquery • Updated in real-time</p>
-        </div>
+        {/* Tabs Section */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="validation">API Validation</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview" className="space-y-4">
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Data provided by Bitquery • Updated in real-time</p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="validation" className="space-y-4">
+            <BlockchainAndDataValidator apiKey={apiKey} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

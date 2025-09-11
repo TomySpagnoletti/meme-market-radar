@@ -74,7 +74,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
       console.log(`📋 STEP 2: Testing V2 networks (Arbitrum, Base, Optimism, Solana)`);
       
       const v2Query = `{
-        arbitrum: EVM(network: arbitrum, dataset: archive) {
+        arbitrum: EVM(network: arbitrum) {
           DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
             Trade {
               Amount(in: USD)
@@ -82,7 +82,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
             count
           }
         }
-        base: EVM(network: base, dataset: archive) {
+        base: EVM(network: base) {
           DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
             Trade {
               Amount(in: USD)
@@ -90,7 +90,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
             count
           }
         }
-        optimism: EVM(network: optimism, dataset: archive) {
+        optimism: EVM(network: optimism) {
           DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
             Trade {
               Amount(in: USD)
@@ -98,7 +98,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
             count
           }
         }
-        solana: Solana(dataset: archive) {
+        solana: Solana {
           DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
             Trade {
               Amount(in: USD)
@@ -194,7 +194,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
         } else if (v2Networks.includes(blockchain)) {
           if (blockchain === 'solana') {
             return `{
-              Solana(dataset: archive) {
+              Solana {
                 DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
                   Dex {
                     ProtocolName
@@ -208,7 +208,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
             }`;
           } else {
             return `{
-              EVM(network: ${blockchain}, dataset: archive) {
+              EVM(network: ${blockchain}) {
                 DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
                   Dex {
                     ProtocolName
