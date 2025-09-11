@@ -28,15 +28,15 @@ export const ApiKeyInput = ({ onApiKeySubmit, isLoading }: ApiKeyInputProps) => 
           <div className="mx-auto w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center mb-4">
             <Key className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-xl font-bold">Configuration API</CardTitle>
+          <CardTitle className="text-xl font-bold">API Configuration</CardTitle>
           <CardDescription>
-            Entrez votre clé API Bitquery pour accéder aux données de trading
+            Enter your Bitquery API key to access trading data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert>
             <AlertDescription className="text-sm">
-              Obtenez votre clé API gratuite sur{" "}
+              Get your free API key from{" "}
               <a 
                 href="https://bitquery.io/" 
                 target="_blank" 
@@ -51,11 +51,11 @@ export const ApiKeyInput = ({ onApiKeySubmit, isLoading }: ApiKeyInputProps) => 
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="apiKey">Clé API Bitquery</Label>
+              <Label htmlFor="apiKey">Bitquery API Key</Label>
               <Input
                 id="apiKey"
                 type="password"
-                placeholder="Entrez votre clé API..."
+                placeholder="Enter your API key..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 required
@@ -68,7 +68,7 @@ export const ApiKeyInput = ({ onApiKeySubmit, isLoading }: ApiKeyInputProps) => 
               className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-primary-foreground"
               disabled={!apiKey.trim() || isLoading}
             >
-              {isLoading ? "Connexion..." : "Accéder au Dashboard"}
+              {isLoading ? "Connecting..." : "Access Dashboard"}
             </Button>
           </form>
         </CardContent>

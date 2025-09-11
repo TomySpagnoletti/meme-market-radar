@@ -36,15 +36,15 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       
       setData(mockData);
       toast({
-        title: "Données mises à jour",
-        description: "Les dernières données de trading ont été récupérées.",
+        title: "Data Updated",
+        description: "Latest trading data has been retrieved.",
       });
     } catch (error) {
-      console.error("Erreur lors de la récupération des données:", error);
+      console.error("Error fetching data:", error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de récupérer les données. Vérifiez votre clé API.",
+        title: "Error",
+        description: "Unable to fetch data. Please check your API key.",
       });
     } finally {
       setIsLoading(false);
@@ -60,7 +60,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-2 border-crypto-primary border-t-transparent mx-auto"></div>
-          <p className="text-muted-foreground">Récupération des données...</p>
+          <p className="text-muted-foreground">Fetching data...</p>
         </div>
       </div>
     );
@@ -76,7 +76,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               Meme Token Dashboard
             </h1>
             <p className="text-muted-foreground mt-1">
-              Analytics en temps réel des blockchains et protocoles
+              Real-time blockchain and protocol analytics
             </p>
           </div>
           <div className="flex gap-3">
@@ -88,7 +88,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               className="border-crypto-primary/20 hover:bg-crypto-primary/10"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Actualiser
+              Refresh
             </Button>
             <Button
               onClick={onLogout}
@@ -97,7 +97,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               className="text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
+              Logout
             </Button>
           </div>
         </div>
@@ -106,7 +106,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         {data && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <CryptoCard
-              title="Blockchain Dominante"
+              title="Top Blockchain"
               value={data.topBlockchain}
               subtitle="Meme Tokens"
               trend="up"
@@ -114,14 +114,14 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               className="md:col-span-2 lg:col-span-1"
             />
             <CryptoCard
-              title="Protocole Principal"
+              title="Leading Protocol"
               value={data.topProtocol}
               subtitle="DEX Leader"
               trend="up"
               icon="zap"
             />
             <CryptoCard
-              title="Volume 24h"
+              title="24h Volume"
               value={data.volume24h}
               subtitle="+12.5%"
               trend="up"
@@ -130,7 +130,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
             <CryptoCard
               title="Transactions"
               value={data.transactions}
-              subtitle="Dernières 24h"
+              subtitle="Last 24h"
               trend="neutral"
               icon="activity"
             />
@@ -144,19 +144,19 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               <TrendingUp className="h-8 w-8 text-primary-foreground" />
             </div>
             <h2 className="text-2xl font-bold">
-              {data?.topBlockchain} domine le marché des meme tokens
+              {data?.topBlockchain} dominates the meme token market
             </h2>
             <p className="text-muted-foreground">
-              Avec {data?.topProtocol} comme protocole de trading principal, 
-              {data?.topBlockchain} traite actuellement le plus gros volume de meme tokens 
-              avec {data?.volume24h} de volume sur les dernières 24 heures.
+              With {data?.topProtocol} as the main trading protocol, 
+              {data?.topBlockchain} currently processes the highest volume of meme tokens 
+              with {data?.volume24h} in volume over the last 24 hours.
             </p>
           </div>
         </div>
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
-          <p>Données fournies par Bitquery • Mis à jour en temps réel</p>
+          <p>Data provided by Bitquery • Updated in real-time</p>
         </div>
       </div>
     </div>
