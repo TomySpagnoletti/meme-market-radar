@@ -24,185 +24,117 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Bitquery GraphQL queries for meme token data
-      const queries = {
-        // Working GraphQL V1 queries for Bitquery
-        ethereumData: `{
-          ethereum(network: ethereum) {
-            dexTrades(
-              options: {limit: 1, desc: "tradeAmount"}
-              date: {since: "2024-01-01"}
-            ) {
-              tradeAmount(in: USD)
-              count
-            }
+      // SINGLE ultra-efficient GraphQL query for ALL blockchains + protocols
+      const combinedQuery = `{
+        ethereum: ethereum(network: ethereum) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        bscData: `{
-          ethereum(network: bsc) {
-            dexTrades(
-              options: {limit: 1, desc: "tradeAmount"} 
-              date: {since: "2024-01-01"}
-            ) {
-              tradeAmount(in: USD)
-              count
-            }
+          topProtocols: dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            protocol
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        topProtocols: `{
-          ethereum(network: ethereum) {
-            dexTrades(
-              options: {limit: 5, desc: "tradeAmount"}
-              date: {since: "2024-01-01"}
-            ) {
-              protocol
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        bsc: ethereum(network: bsc) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        // Add ALL other blockchains with correct syntax
-        polygonData: `{
-          ethereum(network: matic) {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        polygon: ethereum(network: matic) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        arbitrumData: `{
-          ethereum(network: arbitrum) {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        arbitrum: ethereum(network: arbitrum) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        optimismData: `{
-          ethereum(network: optimism) {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        optimism: ethereum(network: optimism) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        baseData: `{
-          ethereum(network: base) {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        base: ethereum(network: base) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        avalancheData: `{
-          ethereum(network: avalanche) {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        avalanche: ethereum(network: avalanche) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        fantomData: `{
-          ethereum(network: fantom) {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        fantom: ethereum(network: fantom) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        cronosData: `{
-          ethereum(network: cronos) {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        cronos: ethereum(network: cronos) {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`,
-        solanaData: `{
-          solana {
-            dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              tradeAmount(in: USD)
-              count
-            }
+        }
+        solana: solana {
+          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+            tradeAmount(in: USD)
+            count
           }
-        }`
-      };
+        }
+      }`;
 
-      // ALL 10 blockchains with working syntax  
-      const allNetworks = [
-        { name: 'ethereum', query: queries.ethereumData },
-        { name: 'bsc', query: queries.bscData },
-        { name: 'polygon', query: queries.polygonData },
-        { name: 'arbitrum', query: queries.arbitrumData },
-        { name: 'optimism', query: queries.optimismData },
-        { name: 'base', query: queries.baseData },
-        { name: 'avalanche', query: queries.avalancheData },
-        { name: 'fantom', query: queries.fantomData },
-        { name: 'cronos', query: queries.cronosData },
-        { name: 'solana', query: queries.solanaData },
-      ];
+      // SINGLE API call instead of 11 calls!
+      const response = await fetch('https://graphql.bitquery.io/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ query: combinedQuery })
+      });
 
-      const responses = await Promise.all([
-        ...allNetworks.map(network => 
-          fetch('https://graphql.bitquery.io/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({ query: network.query })
-          })
-        ),
-        // Protocol query
-        fetch('https://graphql.bitquery.io/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({ query: queries.topProtocols })
-        })
-      ]);
+      const data = await response.json();
+      console.log("Combined API response:", data); // Debug log
 
-      const allData = await Promise.all(
-        responses.map(response => response.json())
-      );
-
-      // Separate protocol data (last response)
-      const protocolData = allData.pop();
-      
-      // Process all blockchain data
+      // Process ALL blockchain data (exact same logic as before)
       const volumes: Record<string, number> = {};
       const transactions: Record<string, number> = {};
       
-      allNetworks.forEach((network, index) => {
-        const data = allData[index];
-        console.log(`${network.name} data:`, data); // Debug log
+      const networkList = ['ethereum', 'bsc', 'polygon', 'arbitrum', 'optimism', 'base', 'avalanche', 'fantom', 'cronos', 'solana'];
+      
+      networkList.forEach((network) => {
+        const networkData = data.data?.[network];
+        const dexTrades = networkData?.dexTrades?.[0];
         
-        // Updated structure for GraphQL V1 (works for all networks)
-        const dexTrades = network.name === 'solana' 
-          ? data.data?.solana?.dexTrades?.[0]
-          : data.data?.ethereum?.dexTrades?.[0];
-          
         if (dexTrades) {
-          volumes[network.name] = dexTrades.tradeAmount || 0;
-          transactions[network.name] = dexTrades.count || 0;
+          volumes[network] = dexTrades.tradeAmount || 0;
+          transactions[network] = dexTrades.count || 0;
         } else {
-          volumes[network.name] = 0;
-          transactions[network.name] = 0;
+          volumes[network] = 0;
+          transactions[network] = 0;
         }
       });
 
       console.log("All volumes:", volumes); // Debug log
       console.log("All transactions:", transactions); // Debug log
 
-      // Find top blockchain by volume (evaluation logic)
+      // Find top blockchain by volume (EXACT same evaluation logic)
       const topBlockchain = Object.entries(volumes).reduce((a, b) => 
         volumes[a[0]] > volumes[b[0]] ? a : b
       )[0];
 
-      // Process protocol data - updated structure
-      const topProtocol = protocolData?.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
+      // Process protocol data (same logic)
+      const topProtocol = data.data?.ethereum?.topProtocols?.[0]?.protocol || "Unknown";
       const totalVolume = Object.values(volumes).reduce((sum, vol) => sum + vol, 0);
       const totalTransactions = Object.values(transactions).reduce((sum, count) => sum + count, 0);
 
