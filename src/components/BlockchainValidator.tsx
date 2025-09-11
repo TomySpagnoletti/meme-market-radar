@@ -182,11 +182,11 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge variant="default" className="bg-green-100 text-green-800">OK</Badge>;
+                  return <Badge variant="default" className="bg-green-100 text-green-800">OK</Badge>;
       case 'error':
-        return <Badge variant="destructive">ERREUR</Badge>;
+        return <Badge variant="destructive">ERROR</Badge>;
       default:
-        return <Badge variant="secondary">TEST...</Badge>;
+        return <Badge variant="secondary">TESTING...</Badge>;
     }
   };
 
@@ -198,10 +198,10 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <RefreshCw className={`h-5 w-5 ${isValidating ? 'animate-spin' : ''}`} />
-          Validation des Blockchains
+          Blockchain Validation
         </CardTitle>
         <CardDescription>
-          Test programmatique de chaque blockchain pour vérifier la connectivité et les données
+          Programmatic test of each blockchain to verify connectivity and data
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -216,7 +216,7 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            {isValidating ? 'Test en cours...' : 'Tester toutes les blockchains'}
+            {isValidating ? 'Testing in progress...' : 'Test all blockchains'}
           </Button>
           
           {results.length > 0 && (
@@ -271,13 +271,13 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
 
         {results.length > 0 && !isValidating && (
           <div className="mt-4 p-3 bg-muted rounded-lg">
-            <h4 className="font-medium mb-2">Résumé du test</h4>
+            <h4 className="font-medium mb-2">Test Summary</h4>
             <div className="text-sm text-muted-foreground">
-              <p>• {successCount}/7 blockchains fonctionnent correctement</p>
-              <p>• {errorCount}/7 blockchains ont des erreurs</p>
+              <p>• {successCount}/7 blockchains working correctly</p>
+              <p>• {errorCount}/7 blockchains have errors</p>
               {successCount === 7 && (
                 <p className="text-green-600 font-medium mt-1">
-                  ✅ Toutes les blockchains sont opérationnelles !
+                  ✅ All blockchains are operational!
                 </p>
               )}
             </div>
