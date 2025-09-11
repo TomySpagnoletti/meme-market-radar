@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { CryptoCard } from "./CryptoCard";
-import { DebugPanel } from "./DebugPanel";
 import { BlockchainValidator } from "./BlockchainValidator";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -21,16 +20,11 @@ interface DashboardProps {
 export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [debugVisible, setDebugVisible] = useState(false);
-  const [apiResponses, setApiResponses] = useState<any[]>([]);
   const { toast } = useToast();
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Clear previous responses
-      setApiResponses([]);
-
       // STEP 1: V1 API call for confirmed networks (Ethereum, BSC, Polygon)
       const v1Query = `{
         ethereum: ethereum(network: ethereum) {
@@ -116,10 +110,9 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
 
       console.log("V1 data:", v1Data);
       console.log("V2 data:", v2Data);
-      setApiResponses(prev => [...prev, 
-        { step: 1, api: "V1", networks: ["ethereum", "bsc", "polygon"], data: v1Data },
-        { step: 2, api: "V2", networks: ["arbitrum", "base", "optimism", "solana"], data: v2Data }
-      ]);
+      // Log API responses for debugging
+      console.log("V1 data:", v1Data);
+      console.log("V2 data:", v2Data);
 
       // Process V1 data (Ethereum, BSC, Polygon)
       const volumes: Record<string, number> = {};
@@ -229,7 +222,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
 
       const protocolData = await protocolResponse.json();
       console.log("Protocol data:", protocolData);
-      setApiResponses(prev => [...prev, { step: 3, api: "Protocol", blockchain: topBlockchain, data: protocolData }]);
+      console.log("Protocol data:", protocolData);
 
       // Extract leading protocol
       let topProtocol = "Unknown";
@@ -411,13 +404,6 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           <p>Data provided by Bitquery • Updated in real-time</p>
         </div>
       </div>
-
-      {/* Debug Panel */}
-      <DebugPanel 
-        isVisible={debugVisible}
-        onToggle={() => setDebugVisible(!debugVisible)}
-        apiResponses={apiResponses}
-      />
     </div>
   );
 };
