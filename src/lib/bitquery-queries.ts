@@ -4,19 +4,19 @@ export const BITQUERY_QUERIES = {
   // V1 API Query for Ethereum, BSC, Polygon
   getV1NetworksQuery: () => `{
     ethereum: ethereum(network: ethereum) {
-      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
         tradeAmount(in: USD)
         count
       }
     }
     bsc: ethereum(network: bsc) {
-      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
         tradeAmount(in: USD)
         count
       }
     }
     polygon: ethereum(network: matic) {
-      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
         tradeAmount(in: USD)
         count
       }
@@ -72,7 +72,7 @@ export const BITQUERY_QUERIES = {
       };
       return `{
         ethereum(network: ${networkMap[blockchain]}) {
-          dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+          dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
             protocol
             tradeAmount(in: USD)
             count
