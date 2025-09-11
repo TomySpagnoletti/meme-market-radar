@@ -27,8 +27,11 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // STEP 1: Get supported blockchain volumes (corrected networks only)
-      const blockchainsQuery = `{
+      // Clear previous responses
+      setApiResponses([]);
+
+      // STEP 1: V1 API call for confirmed networks (Ethereum, BSC, Polygon)
+      const v1Query = `{
         ethereum: ethereum(network: ethereum) {
           dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
             tradeAmount(in: USD)
@@ -49,68 +52,164 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         }
       }`;
 
-      // First API call - get all blockchain data
-      const firstResponse = await fetch('https://graphql.bitquery.io/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ query: blockchainsQuery })
-      });
+      // STEP 2: V2 API call for confirmed networks (Arbitrum, Base, Solana)
+      const v2Query = `{
+        arbitrum: EVM(network: arbitrum, dataset: archive) {
+          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+            Trade {
+              Amount(in: USD)
+            }
+            count
+          }
+        }
+        base: EVM(network: base, dataset: archive) {
+          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+            Trade {
+              Amount(in: USD)
+            }
+            count
+          }
+        }
+        solana: Solana(dataset: archive) {
+          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+            Trade {
+              Amount(in: USD)
+            }
+            count
+          }
+        }
+      }`;
 
-      const blockchainsData = await firstResponse.json();
-      console.log("Step 1 - All blockchains data:", blockchainsData);
-      setApiResponses(prev => [...prev, { step: 1, query: "blockchains", data: blockchainsData }]);
+      // Execute both API calls in parallel
+      const [v1Response, v2Response] = await Promise.all([
+        fetch('https://graphql.bitquery.io/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({ query: v1Query })
+        }),
+        fetch('https://graphql.bitquery.io/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({ query: v2Query })
+        })
+      ]);
 
-      // Process data to find top blockchain (only supported networks)
+      const [v1Data, v2Data] = await Promise.all([
+        v1Response.json(),
+        v2Response.json()
+      ]);
+
+      console.log("V1 data:", v1Data);
+      console.log("V2 data:", v2Data);
+      setApiResponses(prev => [...prev, 
+        { step: 1, api: "V1", networks: ["ethereum", "bsc", "polygon"], data: v1Data },
+        { step: 2, api: "V2", networks: ["arbitrum", "base", "solana"], data: v2Data }
+      ]);
+
+      // Process V1 data (Ethereum, BSC, Polygon)
       const volumes: Record<string, number> = {};
       const transactions: Record<string, number> = {};
-      
-      const networkList = ['ethereum', 'bsc', 'polygon'];
-      
-      networkList.forEach((network) => {
-        const networkData = blockchainsData.data?.[network];
-        const dexTrades = networkData?.dexTrades?.[0];
-        
-        if (dexTrades) {
-          volumes[network] = dexTrades.tradeAmount || 0;
-          transactions[network] = dexTrades.count || 0;
+
+      // V1 data processing
+      ['ethereum', 'bsc', 'polygon'].forEach(network => {
+        const networkData = v1Data.data?.[network];
+        const dexTrade = networkData?.dexTrades?.[0];
+        if (dexTrade) {
+          volumes[network] = dexTrade.tradeAmount || 0;
+          transactions[network] = dexTrade.count || 0;
         } else {
           volumes[network] = 0;
           transactions[network] = 0;
         }
       });
 
-      // Find the winning blockchain
+      // V2 data processing
+      ['arbitrum', 'base', 'solana'].forEach(network => {
+        const networkData = v2Data.data?.[network];
+        const dexTrade = networkData?.DEXTrades?.[0];
+        if (dexTrade) {
+          volumes[network] = dexTrade.Trade?.Amount || 0;
+          transactions[network] = dexTrade.count || 0;
+        } else {
+          volumes[network] = 0;
+          transactions[network] = 0;
+        }
+      });
+
+      console.log("All volumes:", volumes);
+      console.log("All transactions:", transactions);
+
+      // Find top blockchain by volume
       const topBlockchain = Object.entries(volumes).reduce((a, b) => 
         volumes[a[0]] > volumes[b[0]] ? a : b
       )[0];
 
-      console.log("Top blockchain found:", topBlockchain);
+      console.log("Top blockchain:", topBlockchain);
 
-      // STEP 2: Get leading protocol from the winning blockchain only 
+      // STEP 3: Get leading protocol from winning blockchain (dynamic V1/V2)
       const getProtocolQuery = (blockchain: string) => {
-        // Only use supported networks for protocol queries
-        const networkMap: Record<string, string> = {
-          ethereum: 'ethereum',
-          bsc: 'bsc', 
-          polygon: 'matic'
-        };
-        
-        return `{
-          ethereum(network: ${networkMap[blockchain]}) {
-            dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-              protocol
-              tradeAmount(in: USD)
-              count
+        const v1Networks = ['ethereum', 'bsc', 'polygon'];
+        const v2Networks = ['arbitrum', 'base', 'solana'];
+
+        if (v1Networks.includes(blockchain)) {
+          // Use V1 syntax
+          const networkMap: Record<string, string> = {
+            ethereum: 'ethereum',
+            bsc: 'bsc', 
+            polygon: 'matic'
+          };
+          return `{
+            ethereum(network: ${networkMap[blockchain]}) {
+              dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+                protocol
+                tradeAmount(in: USD)
+                count
+              }
             }
+          }`;
+        } else if (v2Networks.includes(blockchain)) {
+          // Use V2 syntax
+          if (blockchain === 'solana') {
+            return `{
+              Solana(dataset: archive) {
+                DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
+                  Dex {
+                    ProtocolName
+                  }
+                  Trade {
+                    Amount(in: USD)
+                  }
+                  count
+                }
+              }
+            }`;
+          } else {
+            return `{
+              EVM(network: ${blockchain}, dataset: archive) {
+                DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
+                  Dex {
+                    ProtocolName
+                  }
+                  Trade {
+                    Amount(in: USD)
+                  }
+                  count
+                }
+              }
+            }`;
           }
-        }`;
+        }
+        return '';
       };
 
-      // Second API call - get protocols from winning blockchain
-      const secondResponse = await fetch('https://graphql.bitquery.io/', {
+      // Execute protocol query
+      const protocolResponse = await fetch('https://graphql.bitquery.io/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,14 +218,23 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         body: JSON.stringify({ query: getProtocolQuery(topBlockchain) })
       });
 
-      const protocolData = await secondResponse.json();
-      console.log("Step 2 - Protocol data for", topBlockchain, ":", protocolData);
-      setApiResponses(prev => [...prev, { step: 2, query: "protocols", blockchain: topBlockchain, data: protocolData }]);
+      const protocolData = await protocolResponse.json();
+      console.log("Protocol data:", protocolData);
+      setApiResponses(prev => [...prev, { step: 3, api: "Protocol", blockchain: topBlockchain, data: protocolData }]);
 
-      // Extract leading protocol from the winning blockchain
-      const topProtocol = protocolData.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
+      // Extract leading protocol
+      let topProtocol = "Unknown";
+      const v1Networks = ['ethereum', 'bsc', 'polygon'];
+      
+      if (v1Networks.includes(topBlockchain)) {
+        topProtocol = protocolData.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
+      } else if (topBlockchain === 'solana') {
+        topProtocol = protocolData.data?.Solana?.DEXTrades?.[0]?.Dex?.ProtocolName || "Unknown";
+      } else {
+        topProtocol = protocolData.data?.EVM?.DEXTrades?.[0]?.Dex?.ProtocolName || "Unknown";
+      }
 
-      // Calculate aggregated metrics
+      // Calculate final metrics
       const totalVolume = Object.values(volumes).reduce((sum, vol) => sum + vol, 0);
       const totalTransactions = Object.values(transactions).reduce((sum, count) => sum + count, 0);
 
@@ -269,7 +377,10 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
             {[
               { name: "Ethereum", version: "V1" },
               { name: "BSC", version: "V1" }, 
-              { name: "Polygon", version: "V1" }
+              { name: "Polygon", version: "V1" },
+              { name: "Arbitrum", version: "V2" },
+              { name: "Base", version: "V2" },
+              { name: "Solana", version: "V2" }
             ].map((blockchain) => (
               <div
                 key={blockchain.name}
