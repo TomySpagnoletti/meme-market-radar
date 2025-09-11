@@ -56,12 +56,16 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         }
       });
 
-      // V2 data processing
+      // V2 data processing - Corrected structure
       BLOCKCHAIN_CONFIG.v2Networks.forEach(network => {
         const networkData = v2Data.data?.[network];
         const dexTrade = networkData?.DEXTrades?.[0];
         if (dexTrade) {
-          volumes[network] = dexTrade.Trade?.Amount || 0;
+          if (network === 'solana') {
+            volumes[network] = dexTrade.Trade?.Sell?.PriceInUSD || 0;
+          } else {
+            volumes[network] = dexTrade.Trade?.Sell?.AmountInUSD || 0;
+          }
           transactions[network] = dexTrade.count || 0;
         } else {
           volumes[network] = 0;
@@ -89,9 +93,9 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       if (BLOCKCHAIN_CONFIG.v1Networks.includes(topBlockchain)) {
         topProtocol = protocolData.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
       } else if (topBlockchain === 'solana') {
-        topProtocol = protocolData.data?.Solana?.DEXTrades?.[0]?.Dex?.ProtocolName || "Unknown";
+        topProtocol = protocolData.data?.Solana?.DEXTrades?.[0]?.Trade?.Dex?.ProtocolName || "Unknown";
       } else {
-        topProtocol = protocolData.data?.EVM?.DEXTrades?.[0]?.Dex?.ProtocolName || "Unknown";
+        topProtocol = protocolData.data?.EVM?.DEXTrades?.[0]?.Trade?.Dex?.ProtocolName || "Unknown";
       }
 
       // Calculate totals

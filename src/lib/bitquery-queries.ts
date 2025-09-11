@@ -53,36 +53,44 @@ export const BITQUERY_QUERIES = {
     }`;
   },
 
-  // V2 API Query for Arbitrum, Base, Optimism, Solana
+  // V2 API Query for Arbitrum, Base, Optimism (using correct EVM structure) and Solana
   getV2NetworksQuery: () => `{
     arbitrum: EVM(network: arbitrum) {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
         Trade {
-          Amount(in: USD)
+          Sell {
+            AmountInUSD
+          }
         }
         count
       }
     }
     base: EVM(network: base) {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
         Trade {
-          Amount(in: USD)
+          Sell {
+            AmountInUSD
+          }
         }
         count
       }
     }
     optimism: EVM(network: optimism) {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
         Trade {
-          Amount(in: USD)
+          Sell {
+            AmountInUSD
+          }
         }
         count
       }
     }
     solana: Solana {
-      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+      DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Sell_PriceInUSD}) {
         Trade {
-          Amount(in: USD)
+          Sell {
+            PriceInUSD
+          }
         }
         count
       }
@@ -114,12 +122,14 @@ export const BITQUERY_QUERIES = {
       if (blockchain === 'solana') {
         return `{
           Solana {
-            DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
-              Dex {
-                ProtocolName
-              }
+            DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Sell_PriceInUSD}) {
               Trade {
-                Amount(in: USD)
+                Dex {
+                  ProtocolName
+                }
+                Sell {
+                  PriceInUSD
+                }
               }
               count
             }
@@ -128,12 +138,14 @@ export const BITQUERY_QUERIES = {
       } else {
         return `{
           EVM(network: ${blockchain}) {
-            DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
-              Dex {
-                ProtocolName
-              }
+            DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
               Trade {
-                Amount(in: USD)
+                Dex {
+                  ProtocolName
+                }
+                Sell {
+                  AmountInUSD
+                }
               }
               count
             }
