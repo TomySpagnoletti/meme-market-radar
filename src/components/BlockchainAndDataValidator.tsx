@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { BITQUERY_QUERIES, executeBitqueryQuery, BLOCKCHAIN_CONFIG } from "@/lib/bitquery-queries";
 
 interface ValidationResult {
   blockchain: string;
@@ -31,100 +32,20 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
       // STEP 1: Test V1 API call (same as Dashboard)
       console.log(`📋 STEP 1: Testing V1 networks (Ethereum, BSC, Polygon)`);
       
-      const v1Query = `{
-        ethereum: ethereum(network: ethereum) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        bsc: ethereum(network: bsc) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        polygon: ethereum(network: matic) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-      }`;
-
+      const v1Query = BITQUERY_QUERIES.getV1NetworksQuery();
       console.log(`📤 V1 Query:`, v1Query);
-
-      const v1Response = await fetch('https://graphql.bitquery.io/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ query: v1Query }),
-      });
-
-      const v1Data = await v1Response.json();
+      
+      const v1Data = await executeBitqueryQuery(v1Query, apiKey);
       console.log(`📥 V1 Response:`, v1Data);
-
-      if (v1Data.errors) {
-        throw new Error(`V1 API Error: ${v1Data.errors[0].message}`);
-      }
 
       // STEP 2: Test V2 API call (same as Dashboard)
       console.log(`📋 STEP 2: Testing V2 networks (Arbitrum, Base, Optimism, Solana)`);
       
-      const v2Query = `{
-        arbitrum: EVM(network: arbitrum) {
-          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
-            Trade {
-              Amount(in: USD)
-            }
-            count
-          }
-        }
-        base: EVM(network: base) {
-          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
-            Trade {
-              Amount(in: USD)
-            }
-            count
-          }
-        }
-        optimism: EVM(network: optimism) {
-          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
-            Trade {
-              Amount(in: USD)
-            }
-            count
-          }
-        }
-        solana: Solana {
-          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
-            Trade {
-              Amount(in: USD)
-            }
-            count
-          }
-        }
-      }`;
-
+      const v2Query = BITQUERY_QUERIES.getV2NetworksQuery();
       console.log(`📤 V2 Query:`, v2Query);
-
-      const v2Response = await fetch('https://graphql.bitquery.io/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ query: v2Query }),
-      });
-
-      const v2Data = await v2Response.json();
+      
+      const v2Data = await executeBitqueryQuery(v2Query, apiKey);
       console.log(`📥 V2 Response:`, v2Data);
-
-      if (v2Data.errors) {
-        throw new Error(`V2 API Error: ${v2Data.errors[0].message}`);
-      }
 
       // STEP 3: Calculate top blockchain (same logic as Dashboard)
       console.log(`📋 STEP 3: Processing data to determine top blockchain`);
@@ -133,7 +54,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
       const transactions: Record<string, number> = {};
 
       // Process V1 data
-      ['ethereum', 'bsc', 'polygon'].forEach(network => {
+      BLOCKCHAIN_CONFIG.v1Networks.forEach(network => {
         const networkData = v1Data.data?.[network];
         const dexTrade = networkData?.dexTrades?.[0];
         if (dexTrade) {
@@ -146,7 +67,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
       });
 
       // Process V2 data
-      ['arbitrum', 'base', 'optimism', 'solana'].forEach(network => {
+      BLOCKCHAIN_CONFIG.v2Networks.forEach(network => {
         const networkData = v2Data.data?.[network];
         const dexTrade = networkData?.DEXTrades?.[0];
         if (dexTrade) {
@@ -171,84 +92,16 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
       // STEP 4: Test protocol query for winning blockchain (same as Dashboard)
       console.log(`📋 STEP 4: Testing protocol query for winning blockchain: ${topBlockchain}`);
 
-      // Use the same protocol query logic as Dashboard
-      const getProtocolQuery = (blockchain: string) => {
-        const v1Networks = ['ethereum', 'bsc', 'polygon'];
-        const v2Networks = ['arbitrum', 'base', 'optimism', 'solana'];
-
-        if (v1Networks.includes(blockchain)) {
-          const networkMap: Record<string, string> = {
-            ethereum: 'ethereum',
-            bsc: 'bsc', 
-            polygon: 'matic'
-          };
-          return `{
-            ethereum(network: ${networkMap[blockchain]}) {
-              dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-                protocol
-                tradeAmount(in: USD)
-                count
-              }
-            }
-          }`;
-        } else if (v2Networks.includes(blockchain)) {
-          if (blockchain === 'solana') {
-            return `{
-              Solana {
-                DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
-                  Dex {
-                    ProtocolName
-                  }
-                  Trade {
-                    Amount(in: USD)
-                  }
-                  count
-                }
-              }
-            }`;
-          } else {
-            return `{
-              EVM(network: ${blockchain}) {
-                DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Amount}) {
-                  Dex {
-                    ProtocolName
-                  }
-                  Trade {
-                    Amount(in: USD)
-                  }
-                  count
-                }
-              }
-            }`;
-          }
-        }
-        return '';
-      };
-
-      const protocolQuery = getProtocolQuery(topBlockchain);
+      const protocolQuery = BITQUERY_QUERIES.getProtocolQuery(topBlockchain);
       console.log(`📤 Protocol Query for ${topBlockchain}:`, protocolQuery);
 
-      const protocolResponse = await fetch('https://graphql.bitquery.io/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ query: protocolQuery })
-      });
-
-      const protocolData = await protocolResponse.json();
+      const protocolData = await executeBitqueryQuery(protocolQuery, apiKey);
       console.log(`📥 Protocol Response:`, protocolData);
-
-      if (protocolData.errors) {
-        throw new Error(`Protocol API Error: ${protocolData.errors[0].message}`);
-      }
 
       // Extract protocol name (same logic as Dashboard)
       let topProtocol = "Unknown";
-      const v1Networks = ['ethereum', 'bsc', 'polygon'];
       
-      if (v1Networks.includes(topBlockchain)) {
+      if (BLOCKCHAIN_CONFIG.v1Networks.includes(topBlockchain)) {
         topProtocol = protocolData.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
       } else if (topBlockchain === 'solana') {
         topProtocol = protocolData.data?.Solana?.DEXTrades?.[0]?.Dex?.ProtocolName || "Unknown";
