@@ -47,6 +47,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        crypto: {
+          primary: "hsl(var(--crypto-primary))",
+          secondary: "hsl(var(--crypto-secondary))",
+          accent: "hsl(var(--crypto-accent))",
+          neutral: "hsl(var(--crypto-neutral))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -80,10 +86,32 @@ export default {
             height: "0",
           },
         },
+        "glow": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "glow": "glow 2s ease-in-out infinite alternate",
+        "float": "float 3s ease-in-out infinite",
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-card": "var(--gradient-card)",
+        "gradient-hero": "var(--gradient-hero)",
+      },
+      boxShadow: {
+        "glow": "var(--shadow-glow)",
+        "card": "var(--shadow-card)",
+      },
+      transitionTimingFunction: {
+        "smooth": "var(--transition-smooth)",
       },
     },
   },

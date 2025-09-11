@@ -1,0 +1,164 @@
+import { useState, useEffect } from "react";
+import { CryptoCard } from "./CryptoCard";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { RefreshCw, LogOut, TrendingUp } from "lucide-react";
+
+interface DashboardData {
+  topBlockchain: string;
+  topProtocol: string;
+  volume24h: string;
+  transactions: string;
+}
+
+interface DashboardProps {
+  apiKey: string;
+  onLogout: () => void;
+}
+
+export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Mock data for demonstration - replace with actual Bitquery API call
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
+      
+      const mockData: DashboardData = {
+        topBlockchain: "Solana",
+        topProtocol: "Raydium",
+        volume24h: "$2.4B",
+        transactions: "847,392"
+      };
+      
+      setData(mockData);
+      toast({
+        title: "Données mises à jour",
+        description: "Les dernières données de trading ont été récupérées.",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la récupération des données:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de récupérer les données. Vérifiez votre clé API.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-crypto-primary border-t-transparent mx-auto"></div>
+          <p className="text-muted-foreground">Récupération des données...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-6">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              Meme Token Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Analytics en temps réel des blockchains et protocoles
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              onClick={fetchData}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+              className="border-crypto-primary/20 hover:bg-crypto-primary/10"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualiser
+            </Button>
+            <Button
+              onClick={onLogout}
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Déconnexion
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Stats */}
+        {data && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <CryptoCard
+              title="Blockchain Dominante"
+              value={data.topBlockchain}
+              subtitle="Meme Tokens"
+              trend="up"
+              icon="trending"
+              className="md:col-span-2 lg:col-span-1"
+            />
+            <CryptoCard
+              title="Protocole Principal"
+              value={data.topProtocol}
+              subtitle="DEX Leader"
+              trend="up"
+              icon="zap"
+            />
+            <CryptoCard
+              title="Volume 24h"
+              value={data.volume24h}
+              subtitle="+12.5%"
+              trend="up"
+              icon="trending"
+            />
+            <CryptoCard
+              title="Transactions"
+              value={data.transactions}
+              subtitle="Dernières 24h"
+              trend="neutral"
+              icon="activity"
+            />
+          </div>
+        )}
+
+        {/* Main Feature Card */}
+        <div className="bg-gradient-hero border border-border/50 rounded-lg p-8 text-center">
+          <div className="max-w-2xl mx-auto space-y-4">
+            <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto">
+              <TrendingUp className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold">
+              {data?.topBlockchain} domine le marché des meme tokens
+            </h2>
+            <p className="text-muted-foreground">
+              Avec {data?.topProtocol} comme protocole de trading principal, 
+              {data?.topBlockchain} traite actuellement le plus gros volume de meme tokens 
+              avec {data?.volume24h} de volume sur les dernières 24 heures.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>Données fournies par Bitquery • Mis à jour en temps réel</p>
+        </div>
+      </div>
+    </div>
+  );
+};
