@@ -177,13 +177,13 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           </div>
 
           {/* Tabs System */}
-          <Tabs defaultValue="dashboard" className="w-full">
+          <Tabs defaultValue="analytics" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="validation">API Validation</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="dashboard" className="space-y-6 mt-6">
+            <TabsContent value="analytics" className="space-y-6 mt-6">
               {/* Loading State */}
               {isLoading && (
                 <div className="text-center py-12">
@@ -244,35 +244,36 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
                   </div>
                 </div>
               )}
-
-              {/* Supported Blockchains Section - Compact */}
-              <div className="bg-gradient-card border border-border/50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-3 text-center">Supported Networks</h3>
-                <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
-                  {BLOCKCHAIN_CONFIG.supportedBlockchains.map((blockchain) => (
-                    <div
-                      key={blockchain.name}
-                      className="bg-background/50 border border-border/30 rounded-md p-2 text-center hover:bg-crypto-primary/10 transition-colors"
-                    >
-                      <span className="text-xs font-medium block">{blockchain.name}</span>
-                      <span className="text-xs text-muted-foreground">{blockchain.version}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="text-center text-sm text-muted-foreground space-y-1">
-                <p>Data provided by Bitquery • Updated on refresh</p>
-                <p className="text-xs">
-                  Period: {getDataPeriodInfo().period} ({getDataPeriodInfo().startDate} - {getDataPeriodInfo().endDate})
-                </p>
-              </div>
             </TabsContent>
             
             <TabsContent value="validation" className="space-y-4 mt-6">
               <BlockchainAndDataValidator apiKey={apiKey} />
             </TabsContent>
           </Tabs>
+
+          {/* Supported Blockchains Section - Always visible */}
+          <div className="bg-gradient-card border border-border/50 rounded-lg p-4 mt-8">
+            <h3 className="text-lg font-semibold mb-3 text-center">Supported Networks</h3>
+            <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+              {BLOCKCHAIN_CONFIG.supportedBlockchains.map((blockchain) => (
+                <div
+                  key={blockchain.name}
+                  className="bg-background/50 border border-border/30 rounded-md p-2 text-center hover:bg-crypto-primary/10 transition-colors"
+                >
+                  <span className="text-xs font-medium block">{blockchain.name}</span>
+                  <span className="text-xs text-muted-foreground">{blockchain.version}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer - Always visible */}
+          <div className="text-center text-sm text-muted-foreground space-y-1 mt-6">
+            <p>Data provided by Bitquery • Updated on refresh</p>
+            <p className="text-xs">
+              Period: {getDataPeriodInfo().period} ({getDataPeriodInfo().startDate} - {getDataPeriodInfo().endDate})
+            </p>
+          </div>
         </div>
       </div>
     </div>
