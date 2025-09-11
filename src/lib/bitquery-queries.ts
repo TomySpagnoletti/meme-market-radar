@@ -1,27 +1,57 @@
 // Centralized Bitquery GraphQL queries to avoid code duplication
 
+// Get date from 6 months ago in YYYY-MM-DD format
+const getSixMonthsAgoDate = (): string => {
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+  return sixMonthsAgo.toISOString().split('T')[0];
+};
+
+// Get formatted date range for display
+export const getDataPeriodInfo = () => {
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+  
+  return {
+    startDate: formatDate(sixMonthsAgo),
+    endDate: formatDate(new Date()),
+    period: "Last 6 months"
+  };
+};
+
 export const BITQUERY_QUERIES = {
   // V1 API Query for Ethereum, BSC, Polygon
-  getV1NetworksQuery: () => `{
-    ethereum: ethereum(network: ethereum) {
-      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
-        tradeAmount(in: USD)
-        count
+  getV1NetworksQuery: () => {
+    const sinceDate = getSixMonthsAgoDate();
+    return `{
+      ethereum: ethereum(network: ethereum) {
+        dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
+          tradeAmount(in: USD)
+          count
+        }
       }
-    }
-    bsc: ethereum(network: bsc) {
-      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
-        tradeAmount(in: USD)
-        count
+      bsc: ethereum(network: bsc) {
+        dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
+          tradeAmount(in: USD)
+          count
+        }
       }
-    }
-    polygon: ethereum(network: matic) {
-      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
-        tradeAmount(in: USD)
-        count
+      polygon: ethereum(network: matic) {
+        dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
+          tradeAmount(in: USD)
+          count
+        }
       }
-    }
-  }`,
+    }`;
+  },
 
   // V2 API Query for Arbitrum, Base, Optimism, Solana
   getV2NetworksQuery: () => `{
@@ -61,6 +91,7 @@ export const BITQUERY_QUERIES = {
 
   // Dynamic Protocol Query
   getProtocolQuery: (blockchain: string) => {
+    const sinceDate = getSixMonthsAgoDate();
     const v1Networks = ['ethereum', 'bsc', 'polygon'];
     const v2Networks = ['arbitrum', 'base', 'optimism', 'solana'];
 
@@ -72,7 +103,7 @@ export const BITQUERY_QUERIES = {
       };
       return `{
         ethereum(network: ${networkMap[blockchain]}) {
-          dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2025-01-01"}) {
+          dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
             protocol
             tradeAmount(in: USD)
             count

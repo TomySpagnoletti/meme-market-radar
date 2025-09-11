@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, LogOut, TrendingUp } from "lucide-react";
-import { BITQUERY_QUERIES, executeBitqueryQuery, BLOCKCHAIN_CONFIG } from "@/lib/bitquery-queries";
+import { BITQUERY_QUERIES, executeBitqueryQuery, BLOCKCHAIN_CONFIG, getDataPeriodInfo } from "@/lib/bitquery-queries";
 
 interface DashboardData {
   topBlockchain: string;
@@ -210,16 +210,16 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
                     icon="zap"
                   />
                   <CryptoCard
-                    title="24h Volume"
+                    title="6-Month Volume"
                     value={data.volume24h}
-                    subtitle="All Networks"
+                    subtitle="Last 6 months"
                     trend="up"
                     icon="trending"
                   />
                   <CryptoCard
                     title="Transactions"
                     value={data.transactions}
-                    subtitle="All Networks"
+                    subtitle="Last 6 months"
                     trend="neutral"
                     icon="activity"
                   />
@@ -239,7 +239,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
                     <p className="text-muted-foreground">
                       With {data.topProtocol} as the main trading protocol, 
                       {data.topBlockchain} currently processes the highest volume of meme tokens 
-                      with {data.volume24h} in volume over the last 24 hours.
+                      with {data.volume24h} in volume over the last 6 months.
                     </p>
                   </div>
                 </div>
@@ -261,8 +261,11 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
                 </div>
               </div>
 
-              <div className="text-center text-sm text-muted-foreground">
+              <div className="text-center text-sm text-muted-foreground space-y-1">
                 <p>Data provided by Bitquery • Updated in real-time</p>
+                <p className="text-xs">
+                  Period: {getDataPeriodInfo().period} ({getDataPeriodInfo().startDate} - {getDataPeriodInfo().endDate})
+                </p>
               </div>
             </TabsContent>
             
