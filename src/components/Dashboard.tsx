@@ -239,6 +239,27 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           </div>
         </div>
 
+        {/* Supported Blockchains Section */}
+        <div className="bg-gradient-card border border-border/50 rounded-lg p-6">
+          <h2 className="text-xl font-bold mb-4 text-center">Supported Blockchains</h2>
+          <p className="text-muted-foreground text-center mb-6">
+            Data aggregated from all major blockchains for comprehensive meme token analytics
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {[
+              "Ethereum", "BSC", "Polygon", "Arbitrum", "Optimism", 
+              "Base", "Avalanche", "Fantom", "Cronos", "Solana"
+            ].map((blockchain) => (
+              <div
+                key={blockchain}
+                className="bg-background/50 border border-border/30 rounded-lg p-3 text-center hover:bg-crypto-primary/10 transition-colors"
+              >
+                <span className="text-sm font-medium">{blockchain}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
           <p>Data provided by Bitquery • Updated in real-time</p>
