@@ -27,7 +27,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // STEP 1: Get all blockchain volumes to find the top one (1 API call)
+      // STEP 1: Get supported blockchain volumes (corrected networks only)
       const blockchainsQuery = `{
         ethereum: ethereum(network: ethereum) {
           dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
@@ -42,48 +42,6 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           }
         }
         polygon: ethereum(network: matic) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        arbitrum: ethereum(network: arbitrum) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        optimism: ethereum(network: optimism) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        base: ethereum(network: base) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        avalanche: ethereum(network: avalanche) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        fantom: ethereum(network: fantom) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        cronos: ethereum(network: cronos) {
-          dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-            tradeAmount(in: USD)
-            count
-          }
-        }
-        solana: solana {
           dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
             tradeAmount(in: USD)
             count
@@ -105,11 +63,11 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       console.log("Step 1 - All blockchains data:", blockchainsData);
       setApiResponses(prev => [...prev, { step: 1, query: "blockchains", data: blockchainsData }]);
 
-      // Process data to find top blockchain
+      // Process data to find top blockchain (only supported networks)
       const volumes: Record<string, number> = {};
       const transactions: Record<string, number> = {};
       
-      const networkList = ['ethereum', 'bsc', 'polygon', 'arbitrum', 'optimism', 'base', 'avalanche', 'fantom', 'cronos', 'solana'];
+      const networkList = ['ethereum', 'bsc', 'polygon'];
       
       networkList.forEach((network) => {
         const networkData = blockchainsData.data?.[network];
@@ -131,42 +89,24 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
 
       console.log("Top blockchain found:", topBlockchain);
 
-      // STEP 2: Get leading protocol from the winning blockchain only (1 API call)
+      // STEP 2: Get leading protocol from the winning blockchain only 
       const getProtocolQuery = (blockchain: string) => {
-        if (blockchain === 'solana') {
-          return `{
-            solana {
-              dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-                protocol
-                tradeAmount(in: USD)
-                count
-              }
+        // Only use supported networks for protocol queries
+        const networkMap: Record<string, string> = {
+          ethereum: 'ethereum',
+          bsc: 'bsc', 
+          polygon: 'matic'
+        };
+        
+        return `{
+          ethereum(network: ${networkMap[blockchain]}) {
+            dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
+              protocol
+              tradeAmount(in: USD)
+              count
             }
-          }`;
-        } else {
-          // Map blockchain names to correct network identifiers
-          const networkMap: Record<string, string> = {
-            ethereum: 'ethereum',
-            bsc: 'bsc', 
-            polygon: 'matic',
-            arbitrum: 'arbitrum',
-            optimism: 'optimism',
-            base: 'base',
-            avalanche: 'avalanche',
-            fantom: 'fantom',
-            cronos: 'cronos'
-          };
-          
-          return `{
-            ethereum(network: ${networkMap[blockchain]}) {
-              dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "2024-01-01"}) {
-                protocol
-                tradeAmount(in: USD)
-                count
-              }
-            }
-          }`;
-        }
+          }
+        }`;
       };
 
       // Second API call - get protocols from winning blockchain
@@ -184,9 +124,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       setApiResponses(prev => [...prev, { step: 2, query: "protocols", blockchain: topBlockchain, data: protocolData }]);
 
       // Extract leading protocol from the winning blockchain
-      const topProtocol = topBlockchain === 'solana' 
-        ? protocolData.data?.solana?.dexTrades?.[0]?.protocol || "Unknown"
-        : protocolData.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
+      const topProtocol = protocolData.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
 
       // Calculate aggregated metrics
       const totalVolume = Object.values(volumes).reduce((sum, vol) => sum + vol, 0);
@@ -331,14 +269,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
             {[
               { name: "Ethereum", version: "V1" },
               { name: "BSC", version: "V1" }, 
-              { name: "Polygon", version: "V1" },
-              { name: "Arbitrum", version: "V1" },
-              { name: "Optimism", version: "V1" },
-              { name: "Base", version: "V1" },
-              { name: "Avalanche", version: "V1" },
-              { name: "Fantom", version: "V1" },
-              { name: "Cronos", version: "V1" },
-              { name: "Solana", version: "V1" }
+              { name: "Polygon", version: "V1" }
             ].map((blockchain) => (
               <div
                 key={blockchain.name}
