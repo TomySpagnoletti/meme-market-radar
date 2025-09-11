@@ -26,107 +26,91 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
     try {
       // Bitquery GraphQL queries for meme token data
       const queries = {
-        // Query for blockchain volume comparison  
-        blockchainVolume: `
-          query GetBlockchainVolume {
-            EVM(dataset: archive, network: ethereum) {
-              DEXTrades(
-                limit: {count: 1}
-                orderBy: {descendingByField: "volume"}
-                where: {Block: {Date: {since: "2024-01-01"}}}
-              ) {
-                volume: sum(of: Trade_Amount)
-                count
-              }
-            }
-          }
-        `,
-        bscVolume: `
-          query GetBSCVolume {
-            EVM(dataset: archive, network: bsc) {
-              DEXTrades(
-                limit: {count: 1}
-                orderBy: {descendingByField: "volume"}
-                where: {Block: {Date: {since: "2024-01-01"}}}
-              ) {
-                volume: sum(of: Trade_Amount)
-                count
-              }
-            }
-          }
-        `,
-        // Query for top DEX protocols on Ethereum
-        topProtocols: `
-          query GetTopProtocols {
-            EVM(dataset: archive, network: ethereum) {
-              DEXTrades(
-                limit: {count: 10}
-                orderBy: {descendingByField: "volume"}
-                where: {Block: {Date: {since: "2024-01-01"}}}
-              ) {
-                Protocol {
-                  Name
-                }
-                volume: sum(of: Trade_Amount)
-                transactions: count
-              }
-            }
-          }
-        `
+        // All supported EVM blockchains
+        ethereumData: `query { EVM(dataset: archive, network: ethereum) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        bscData: `query { EVM(dataset: archive, network: bsc) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        polygonData: `query { EVM(dataset: archive, network: polygon) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        arbitrumData: `query { EVM(dataset: archive, network: arbitrum) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        optimismData: `query { EVM(dataset: archive, network: optimism) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        baseData: `query { EVM(dataset: archive, network: base) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        avalancheData: `query { EVM(dataset: archive, network: avalanche) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        fantomData: `query { EVM(dataset: archive, network: fantom) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        cronosData: `query { EVM(dataset: archive, network: cronos) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        
+        // Solana (different structure)
+        solanaData: `query { Solana(dataset: archive) { DEXTrades(limit: {count: 1}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { volume: sum(of: Trade_Amount), count }}}`,
+        
+        // Top protocols query
+        topProtocols: `query { EVM(dataset: archive, network: ethereum) { DEXTrades(limit: {count: 10}, orderBy: {descendingByField: "volume"}, where: {Block: {Date: {since: "2024-01-01"}}}) { Protocol { Name }, volume: sum(of: Trade_Amount), transactions: count }}}`
       };
 
+      // Fetch data from ALL supported blockchains
+      const allNetworks = [
+        { name: 'ethereum', query: queries.ethereumData },
+        { name: 'bsc', query: queries.bscData },
+        { name: 'polygon', query: queries.polygonData },
+        { name: 'arbitrum', query: queries.arbitrumData },
+        { name: 'optimism', query: queries.optimismData },
+        { name: 'base', query: queries.baseData },
+        { name: 'avalanche', query: queries.avalancheData },
+        { name: 'fantom', query: queries.fantomData },
+        { name: 'cronos', query: queries.cronosData },
+        { name: 'solana', query: queries.solanaData },
+      ];
+
       const responses = await Promise.all([
+        ...allNetworks.map(network => 
+          fetch('https://graphql.bitquery.io/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({ query: network.query })
+          })
+        ),
+        // Protocol query
         fetch('https://graphql.bitquery.io/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`,
           },
-          body: JSON.stringify({
-            query: queries.blockchainVolume
-          })
-        }),
-        fetch('https://graphql.bitquery.io/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            query: queries.bscVolume
-          })
-        }),
-        fetch('https://graphql.bitquery.io/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            query: queries.topProtocols
-          })
+          body: JSON.stringify({ query: queries.topProtocols })
         })
       ]);
 
-      const [ethData, bscData, protocolData] = await Promise.all(
+      const allData = await Promise.all(
         responses.map(response => response.json())
       );
 
-      // Process blockchain volume data
-      const volumes = {
-        ethereum: ethData.data?.EVM?.[0]?.volume || 0,
-        bsc: bscData.data?.EVM?.[0]?.volume || 0,
-      };
+      // Separate protocol data (last response)
+      const protocolData = allData.pop();
+      
+      // Process all blockchain data
+      const volumes: Record<string, number> = {};
+      const transactions: Record<string, number> = {};
+      
+      allNetworks.forEach((network, index) => {
+        const data = allData[index];
+        if (network.name === 'solana') {
+          volumes[network.name] = data.data?.Solana?.[0]?.volume || 0;
+          transactions[network.name] = data.data?.Solana?.[0]?.count || 0;
+        } else {
+          volumes[network.name] = data.data?.EVM?.[0]?.volume || 0;
+          transactions[network.name] = data.data?.EVM?.[0]?.count || 0;
+        }
+      });
 
+      // Find top blockchain by volume
       const topBlockchain = Object.entries(volumes).reduce((a, b) => 
         volumes[a[0]] > volumes[b[0]] ? a : b
       )[0];
 
       // Process protocol data
       const topProtocol = protocolData.data?.EVM?.[0]?.Protocol?.Name || "Unknown";
-      const totalVolume = Object.values(volumes).reduce((sum: number, vol: any) => sum + (vol || 0), 0);
-      const totalTransactions = (ethData.data?.EVM?.[0]?.count || 0) +
-                               (bscData.data?.EVM?.[0]?.count || 0);
+      const totalVolume = Object.values(volumes).reduce((sum, vol) => sum + vol, 0);
+      const totalTransactions = Object.values(transactions).reduce((sum, count) => sum + count, 0);
 
       const processedData: DashboardData = {
         topBlockchain: topBlockchain.charAt(0).toUpperCase() + topBlockchain.slice(1),
