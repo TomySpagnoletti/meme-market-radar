@@ -343,14 +343,23 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
-              "Ethereum", "BSC", "Polygon", "Arbitrum", "Optimism", 
-              "Base", "Avalanche", "Fantom", "Cronos", "Solana"
+              { name: "Ethereum", version: "V1" },
+              { name: "BSC", version: "V1" }, 
+              { name: "Polygon", version: "V1" },
+              { name: "Arbitrum", version: "V1" },
+              { name: "Optimism", version: "V1" },
+              { name: "Base", version: "V1" },
+              { name: "Avalanche", version: "V1" },
+              { name: "Fantom", version: "V1" },
+              { name: "Cronos", version: "V1" },
+              { name: "Solana", version: "V1" }
             ].map((blockchain) => (
               <div
-                key={blockchain}
+                key={blockchain.name}
                 className="bg-background/50 border border-border/30 rounded-lg p-3 text-center hover:bg-crypto-primary/10 transition-colors"
               >
-                <span className="text-sm font-medium">{blockchain}</span>
+                <span className="text-sm font-medium block">{blockchain.name}</span>
+                <span className="text-xs text-muted-foreground">API {blockchain.version}</span>
               </div>
             ))}
           </div>
