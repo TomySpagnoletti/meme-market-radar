@@ -52,7 +52,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         }
       }`;
 
-      // STEP 2: V2 API call for confirmed networks (Arbitrum, Base, Solana)
+      // STEP 2: V2 API call for confirmed networks (Arbitrum, Base, Solana, Optimism)
       const v2Query = `{
         arbitrum: EVM(network: arbitrum, dataset: archive) {
           DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
@@ -63,6 +63,14 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           }
         }
         base: EVM(network: base, dataset: archive) {
+          DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
+            Trade {
+              Amount(in: USD)
+            }
+            count
+          }
+        }
+        optimism: EVM(network: optimism, dataset: archive) {
           DEXTrades(limit: {count: 1}, orderBy: {descending: Trade_Amount}) {
             Trade {
               Amount(in: USD)
@@ -109,7 +117,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       console.log("V2 data:", v2Data);
       setApiResponses(prev => [...prev, 
         { step: 1, api: "V1", networks: ["ethereum", "bsc", "polygon"], data: v1Data },
-        { step: 2, api: "V2", networks: ["arbitrum", "base", "solana"], data: v2Data }
+        { step: 2, api: "V2", networks: ["arbitrum", "base", "optimism", "solana"], data: v2Data }
       ]);
 
       // Process V1 data (Ethereum, BSC, Polygon)
@@ -130,7 +138,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       });
 
       // V2 data processing
-      ['arbitrum', 'base', 'solana'].forEach(network => {
+      ['arbitrum', 'base', 'optimism', 'solana'].forEach(network => {
         const networkData = v2Data.data?.[network];
         const dexTrade = networkData?.DEXTrades?.[0];
         if (dexTrade) {
@@ -155,7 +163,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       // STEP 3: Get leading protocol from winning blockchain (dynamic V1/V2)
       const getProtocolQuery = (blockchain: string) => {
         const v1Networks = ['ethereum', 'bsc', 'polygon'];
-        const v2Networks = ['arbitrum', 'base', 'solana'];
+        const v2Networks = ['arbitrum', 'base', 'optimism', 'solana'];
 
         if (v1Networks.includes(blockchain)) {
           // Use V1 syntax
@@ -380,6 +388,7 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
               { name: "Polygon", version: "V1" },
               { name: "Arbitrum", version: "V2" },
               { name: "Base", version: "V2" },
+              { name: "Optimism", version: "V2" },
               { name: "Solana", version: "V2" }
             ].map((blockchain) => (
               <div
