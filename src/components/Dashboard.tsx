@@ -24,27 +24,126 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Mock data for demonstration - replace with actual Bitquery API call
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
-      
-      const mockData: DashboardData = {
-        topBlockchain: "Solana",
-        topProtocol: "Raydium",
-        volume24h: "$2.4B",
-        transactions: "847,392"
+      // Bitquery GraphQL queries for meme token data
+      const queries = {
+        // Query for blockchain volume comparison
+        blockchainVolume: `
+          query GetBlockchainVolume {
+            ethereum: EVM(network: ethereum) {
+              DEXTrades(
+                limit: {count: 1}
+                orderBy: {descendingByField: "volume"}
+                where: {Block: {Date: {since: "2024-01-01"}}}
+              ) {
+                volume: sum(of: Trade_Amount)
+                count
+              }
+            }
+            bsc: EVM(network: bsc) {
+              DEXTrades(
+                limit: {count: 1}
+                orderBy: {descendingByField: "volume"}
+                where: {Block: {Date: {since: "2024-01-01"}}}
+              ) {
+                volume: sum(of: Trade_Amount)
+                count
+              }
+            }
+            solana: Solana {
+              DEXTrades(
+                limit: {count: 1}
+                orderBy: {descendingByField: "volume"}
+                where: {Block: {Date: {since: "2024-01-01"}}}
+              ) {
+                volume: sum(of: Trade_Amount)
+                count
+              }
+            }
+          }
+        `,
+        // Query for top DEX protocols
+        topProtocols: `
+          query GetTopProtocols {
+            EVM(network: ethereum) {
+              DEXTrades(
+                limit: {count: 10}
+                orderBy: {descendingByField: "volume"}
+                where: {Block: {Date: {since: "2024-01-01"}}}
+              ) {
+                protocol: SmartContract {
+                  Name
+                }
+                volume: sum(of: Trade_Amount)
+                transactions: count
+              }
+            }
+          }
+        `
+      };
+
+      const responses = await Promise.all([
+        fetch('https://graphql.bitquery.io/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            query: queries.blockchainVolume
+          })
+        }),
+        fetch('https://graphql.bitquery.io/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            query: queries.topProtocols
+          })
+        })
+      ]);
+
+      const [blockchainData, protocolData] = await Promise.all(
+        responses.map(response => response.json())
+      );
+
+      // Process blockchain volume data
+      const volumes = {
+        ethereum: blockchainData.data?.ethereum?.[0]?.volume || 0,
+        bsc: blockchainData.data?.bsc?.[0]?.volume || 0,
+        solana: blockchainData.data?.solana?.[0]?.volume || 0,
+      };
+
+      const topBlockchain = Object.entries(volumes).reduce((a, b) => 
+        volumes[a[0]] > volumes[b[0]] ? a : b
+      )[0];
+
+      // Process protocol data
+      const topProtocol = protocolData.data?.EVM?.[0]?.protocol?.Name || "Unknown";
+      const totalVolume = Object.values(volumes).reduce((sum: number, vol: any) => sum + (vol || 0), 0);
+      const totalTransactions = blockchainData.data?.ethereum?.[0]?.count || 0 +
+                               blockchainData.data?.bsc?.[0]?.count || 0 +
+                               blockchainData.data?.solana?.[0]?.count || 0;
+
+      const processedData: DashboardData = {
+        topBlockchain: topBlockchain.charAt(0).toUpperCase() + topBlockchain.slice(1),
+        topProtocol: topProtocol,
+        volume24h: `$${(totalVolume / 1e9).toFixed(1)}B`,
+        transactions: totalTransactions.toLocaleString()
       };
       
-      setData(mockData);
+      setData(processedData);
       toast({
-        title: "Data Updated",
-        description: "Latest trading data has been retrieved.",
+        title: "Live Data Updated",
+        description: "Real-time blockchain data retrieved from Bitquery.",
       });
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Unable to fetch data. Please check your API key.",
+        title: "API Error",
+        description: "Failed to fetch data. Please verify your Bitquery API key.",
       });
     } finally {
       setIsLoading(false);
