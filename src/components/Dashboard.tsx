@@ -27,11 +27,17 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Only V1 API call for confirmed working networks (Ethereum, BSC, Polygon)
+      // STEP 1: V1 API call for confirmed networks (Ethereum, BSC, Polygon)
       const v1Query = BITQUERY_QUERIES.getV1NetworksQuery();
 
-      // Execute V1 API call only
-      const v1Data = await executeBitqueryQuery(v1Query, apiKey);
+      // STEP 2: V2 API call for confirmed networks (Arbitrum, Base, Optimism, Solana) - RESTORED
+      const v2Query = BITQUERY_QUERIES.getV2NetworksQuery();
+
+      // Execute both API calls in parallel
+      const [v1Data, v2Data] = await Promise.all([
+        executeBitqueryQuery(v1Query, apiKey),
+        executeBitqueryQuery(v2Query, apiKey)
+      ]);
 
       // Process V1 data (Ethereum, BSC, Polygon)
       const volumes: Record<string, number> = {};
@@ -50,12 +56,25 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
         }
       });
 
-      // Only V1 data processing (Ethereum, BSC, Polygon)
+      // V1 data processing (Ethereum, BSC, Polygon)
       BLOCKCHAIN_CONFIG.v1Networks.forEach(network => {
         const networkData = v1Data.data?.[network];
         const dexTrade = networkData?.dexTrades?.[0];
         if (dexTrade) {
           volumes[network] = dexTrade.tradeAmount || 0;
+          transactions[network] = dexTrade.count || 0;
+        } else {
+          volumes[network] = 0;
+          transactions[network] = 0;
+        }
+      });
+
+      // V2 data processing - RESTORED WITH CORRECTED STRUCTURE
+      BLOCKCHAIN_CONFIG.v2Networks.forEach(network => {
+        const networkData = v2Data.data?.[network];
+        const dexTrade = networkData?.DEXTrades?.[0];
+        if (dexTrade) {
+          volumes[network] = dexTrade.Trade?.Buy?.AmountInUSD || 0;
           transactions[network] = dexTrade.count || 0;
         } else {
           volumes[network] = 0;

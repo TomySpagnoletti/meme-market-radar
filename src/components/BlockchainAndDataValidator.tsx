@@ -27,9 +27,10 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
     
     console.log(`🧪 Starting blockchain and data validation using REAL Dashboard queries`);
     
-    // Test only V1 API call (working networks: Ethereum, BSC, Polygon)
+    // Test V1 AND V2 API calls (ALL 7 BLOCKCHAINS RESTORED)
     try {
-      console.log(`📋 Testing V1 networks (Ethereum, BSC, Polygon)`);
+      // STEP 1: Test V1 API call
+      console.log(`📋 STEP 1: Testing V1 networks (Ethereum, BSC, Polygon)`);
       
       const v1Query = BITQUERY_QUERIES.getV1NetworksQuery();
       console.log(`📤 V1 Query:`, v1Query);
@@ -37,18 +38,40 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
       const v1Data = await executeBitqueryQuery(v1Query, apiKey);
       console.log(`📥 V1 Response:`, v1Data);
 
-      // Calculate top blockchain from V1 data only
-      console.log(`📋 Processing V1 data to determine top blockchain`);
+      // STEP 2: Test V2 API call (RESTORED)
+      console.log(`📋 STEP 2: Testing V2 networks (Arbitrum, Base, Optimism, Solana)`);
+      
+      const v2Query = BITQUERY_QUERIES.getV2NetworksQuery();
+      console.log(`📤 V2 Query:`, v2Query);
+      
+      const v2Data = await executeBitqueryQuery(v2Query, apiKey);
+      console.log(`📥 V2 Response:`, v2Data);
+
+      // STEP 3: Calculate top blockchain from ALL 7 BLOCKCHAINS
+      console.log(`📋 STEP 3: Processing data to determine top blockchain`);
       
       const volumes: Record<string, number> = {};
       const transactions: Record<string, number> = {};
 
-      // Process only V1 data (Ethereum, BSC, Polygon)
+      // Process V1 data (Ethereum, BSC, Polygon)
       BLOCKCHAIN_CONFIG.v1Networks.forEach(network => {
         const networkData = v1Data.data?.[network];
         const dexTrade = networkData?.dexTrades?.[0];
         if (dexTrade) {
           volumes[network] = dexTrade.tradeAmount || 0;
+          transactions[network] = dexTrade.count || 0;
+        } else {
+          volumes[network] = 0;
+          transactions[network] = 0;
+        }
+      });
+
+      // Process V2 data (RESTORED - Arbitrum, Base, Optimism, Solana)
+      BLOCKCHAIN_CONFIG.v2Networks.forEach(network => {
+        const networkData = v2Data.data?.[network];
+        const dexTrade = networkData?.DEXTrades?.[0];
+        if (dexTrade) {
+          volumes[network] = dexTrade.Trade?.Buy?.AmountInUSD || 0;
           transactions[network] = dexTrade.count || 0;
         } else {
           volumes[network] = 0;
@@ -67,7 +90,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
       console.log(`🏆 Top blockchain: ${topBlockchain}`);
 
       // STEP 4: Test protocol query for winning blockchain (same as Dashboard)
-      console.log(`📋 Testing protocol query for winning blockchain: ${topBlockchain}`);
+      console.log(`📋 STEP 4: Testing protocol query for winning blockchain: ${topBlockchain}`);
 
       const protocolQuery = BITQUERY_QUERIES.getProtocolQuery(topBlockchain);
       console.log(`📤 Protocol Query for ${topBlockchain}:`, protocolQuery);
@@ -153,7 +176,7 @@ export const BlockchainAndDataValidator = ({ apiKey }: BlockchainAndDataValidato
           Blockchain & Data Validation
         </CardTitle>
         <CardDescription>
-          Test V1 networks (Ethereum, BSC, Polygon) with 30-day data for cost efficiency
+          Test ALL 7 blockchains (Ethereum, BSC, Polygon, Arbitrum, Base, Optimism, Solana) with 30-day data
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

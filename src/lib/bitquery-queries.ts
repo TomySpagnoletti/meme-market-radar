@@ -53,15 +53,52 @@ export const BITQUERY_QUERIES = {
     }`;
   },
 
-  // Simplified: Only V1 networks to avoid API errors and save credits
-  getV2NetworksQuery: () => `{
-    ethereum: ethereum(network: ethereum) {
-      dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${getThirtyDaysAgoDate()}"}) {
-        tradeAmount(in: USD)
-        count
+  // V2 API Query for Arbitrum, Base, Optimism, Solana - RESTORED AND FIXED
+  getV2NetworksQuery: () => {
+    const sinceDate = getThirtyDaysAgoDate();
+    return `{
+      arbitrum: EVM(dataset: archive, network: arbitrum) {
+        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
+          Trade {
+            Buy {
+              AmountInUSD
+            }
+          }
+          count
+        }
       }
-    }
-  }`,
+      base: EVM(dataset: archive, network: base) {
+        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
+          Trade {
+            Buy {
+              AmountInUSD
+            }
+          }
+          count
+        }
+      }
+      optimism: EVM(dataset: archive, network: optimism) {
+        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
+          Trade {
+            Buy {
+              AmountInUSD
+            }
+          }
+          count
+        }
+      }
+      solana: Solana(dataset: archive) {
+        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
+          Trade {
+            Buy {
+              AmountInUSD
+            }
+          }
+          count
+        }
+      }
+    }`;
+  },
 
   // Dynamic Protocol Query
   getProtocolQuery: (blockchain: string) => {
@@ -85,16 +122,17 @@ export const BITQUERY_QUERIES = {
         }
       }`;
     } else if (v2Networks.includes(blockchain)) {
+      const sinceDate = getThirtyDaysAgoDate();
       if (blockchain === 'solana') {
         return `{
-          Solana {
-            DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Sell_PriceInUSD}) {
+          Solana(dataset: archive) {
+            DEXTrades(limit: {count: 5}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
               Trade {
                 Dex {
                   ProtocolName
                 }
-                Sell {
-                  PriceInUSD
+                Buy {
+                  AmountInUSD
                 }
               }
               count
@@ -103,13 +141,13 @@ export const BITQUERY_QUERIES = {
         }`;
       } else {
         return `{
-          EVM(network: ${blockchain}) {
-            DEXTrades(limit: {count: 5}, orderBy: {descending: Trade_Sell_AmountInUSD}) {
+          EVM(dataset: archive, network: ${blockchain}) {
+            DEXTrades(limit: {count: 5}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
               Trade {
                 Dex {
                   ProtocolName
                 }
-                Sell {
+                Buy {
                   AmountInUSD
                 }
               }
@@ -143,13 +181,17 @@ export const executeBitqueryQuery = async (query: string, apiKey: string) => {
   return data;
 };
 
-// Blockchain configurations - Simplified to working V1 networks only
+// Blockchain configurations - ALL 7 BLOCKCHAINS RESTORED
 export const BLOCKCHAIN_CONFIG = {
   v1Networks: ['ethereum', 'bsc', 'polygon'],
-  v2Networks: [], // Empty to avoid API errors
+  v2Networks: ['arbitrum', 'base', 'optimism', 'solana'],
   supportedBlockchains: [
     { name: "Ethereum", version: "API V1" },
     { name: "BSC", version: "API V1" }, 
-    { name: "Polygon", version: "API V1" }
+    { name: "Polygon", version: "API V1" },
+    { name: "Arbitrum", version: "API V2" },
+    { name: "Base", version: "API V2" },
+    { name: "Optimism", version: "API V2" },
+    { name: "Solana", version: "API V2" }
   ]
 };
