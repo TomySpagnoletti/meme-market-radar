@@ -45,6 +45,8 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
     for (const blockchain of blockchains) {
       const startTime = Date.now();
       
+      console.log(`🧪 Testing blockchain: ${blockchain.name} (${blockchain.type.toUpperCase()}) on network: ${blockchain.network}`);
+      
       try {
         let query: string;
         
@@ -81,6 +83,8 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
           }`;
         }
 
+        console.log(`📤 Sending query for ${blockchain.name}:`, query);
+
         const response = await fetch('https://graphql.bitquery.io/', {
           method: 'POST',
           headers: {
@@ -93,7 +97,10 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
         const data = await response.json();
         const responseTime = Date.now() - startTime;
 
+        console.log(`📥 Response for ${blockchain.name} (${responseTime}ms):`, data);
+
         if (data.errors) {
+          console.error(`❌ GraphQL errors for ${blockchain.name}:`, data.errors);
           throw new Error(data.errors[0].message);
         }
 
@@ -112,6 +119,8 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
           transactions = dexTrade?.count || 0;
         }
 
+        console.log(`✅ ${blockchain.name} SUCCESS - Volume: $${volume.toLocaleString()}, Transactions: ${transactions.toLocaleString()}, Time: ${responseTime}ms`);
+
         // Update results
         setResults(prev => prev.map(result => 
           result.blockchain === blockchain.name 
@@ -127,7 +136,17 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
 
       } catch (error) {
         const responseTime = Date.now() - startTime;
-        setResults(prev => prev.map(result => 
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        console.error(`❌ Blockchain ${blockchain.name} FAILED:`, {
+          network: blockchain.network,
+          type: blockchain.type,
+          error: errorMessage,
+          responseTime: `${responseTime}ms`,
+          fullError: error
+        });
+        
+        setResults(prev => prev.map(result =>
           result.blockchain === blockchain.name 
             ? { 
                 ...result, 
@@ -137,12 +156,15 @@ export const BlockchainValidator = ({ apiKey }: BlockchainValidatorProps) => {
               }
             : result
         ));
+        
+        console.log(`⏱️ Waiting 500ms before next blockchain test...`);
       }
 
       // Small delay between requests to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
+    console.log(`🏁 Blockchain validation complete!`);
     setIsValidating(false);
   };
 
