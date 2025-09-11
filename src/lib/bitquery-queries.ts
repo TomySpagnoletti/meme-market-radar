@@ -139,12 +139,12 @@ export const BLOCKCHAIN_CONFIG = {
   v1Networks: ['ethereum', 'bsc', 'polygon'],
   v2Networks: ['arbitrum', 'base', 'optimism', 'solana'],
   supportedBlockchains: [
-    { name: "Ethereum", version: "V1" },
-    { name: "BSC", version: "V1" }, 
-    { name: "Polygon", version: "V1" },
-    { name: "Arbitrum", version: "V2" },
-    { name: "Base", version: "V2" },
-    { name: "Optimism", version: "V2" },
-    { name: "Solana", version: "V2" }
+    { name: "Ethereum", version: "API V1" },
+    { name: "BSC", version: "API V1" }, 
+    { name: "Polygon", version: "API V1" },
+    { name: "Arbitrum", version: "API V2" },
+    { name: "Base", version: "API V2" },
+    { name: "Optimism", version: "API V2" },
+    { name: "Solana", version: "API V2" }
   ]
 };
