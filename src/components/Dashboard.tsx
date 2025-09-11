@@ -93,30 +93,37 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
       
       allNetworks.forEach((network, index) => {
         const data = allData[index];
+        console.log(`${network.name} data:`, data); // Debug log
+        
         if (network.name === 'solana') {
-          volumes[network.name] = data.data?.Solana?.[0]?.volume || 0;
-          transactions[network.name] = data.data?.Solana?.[0]?.count || 0;
+          volumes[network.name] = data.data?.Solana?.DEXTrades?.[0]?.volume || 0;
+          transactions[network.name] = data.data?.Solana?.DEXTrades?.[0]?.count || 0;
         } else {
-          volumes[network.name] = data.data?.EVM?.[0]?.volume || 0;
-          transactions[network.name] = data.data?.EVM?.[0]?.count || 0;
+          volumes[network.name] = data.data?.EVM?.DEXTrades?.[0]?.volume || 0;
+          transactions[network.name] = data.data?.EVM?.DEXTrades?.[0]?.count || 0;
         }
       });
 
-      // Find top blockchain by volume
+      console.log("All volumes:", volumes); // Debug log
+      console.log("All transactions:", transactions); // Debug log
+
+      // Find top blockchain by volume (evaluation logic)
       const topBlockchain = Object.entries(volumes).reduce((a, b) => 
         volumes[a[0]] > volumes[b[0]] ? a : b
       )[0];
 
       // Process protocol data
-      const topProtocol = protocolData.data?.EVM?.[0]?.Protocol?.Name || "Unknown";
+      const topProtocol = protocolData?.data?.EVM?.DEXTrades?.[0]?.Protocol?.Name || "Unknown";
       const totalVolume = Object.values(volumes).reduce((sum, vol) => sum + vol, 0);
       const totalTransactions = Object.values(transactions).reduce((sum, count) => sum + count, 0);
+
+      console.log("Final metrics:", { topBlockchain, topProtocol, totalVolume, totalTransactions }); // Debug log
 
       const processedData: DashboardData = {
         topBlockchain: topBlockchain.charAt(0).toUpperCase() + topBlockchain.slice(1),
         topProtocol: topProtocol,
-        volume24h: `$${(totalVolume / 1e9).toFixed(1)}B`,
-        transactions: totalTransactions.toLocaleString()
+        volume24h: totalVolume > 0 ? `$${(totalVolume / 1e9).toFixed(1)}B` : "No data",
+        transactions: totalTransactions > 0 ? totalTransactions.toLocaleString() : "No data"
       };
       
       setData(processedData);
