@@ -42,7 +42,7 @@ All colors MUST be HSL.
     --crypto-primary: 195 100% 50%;
     --crypto-secondary: 168 100% 45%;
     --crypto-accent: 45 100% 60%;
-    --crypto-neutral: 240 5% 64.9%;
+    --crypto-neutral: 168 100% 45%;
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--crypto-primary)), hsl(var(--crypto-secondary)));
@@ -72,6 +72,8 @@ All colors MUST be HSL.
 
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  /* Tailwind v3 setup uses config theme.extend; no @theme directives here. */
 
   .dark {
     --background: 222.2 84% 4.9%;

@@ -4,7 +4,7 @@ import { TrendingUp, Activity, Zap } from "lucide-react";
 
 interface CryptoCardProps {
   title: string;
-  value: string;
+  value: React.ReactNode;
   subtitle?: string;
   trend?: "up" | "down" | "neutral";
   icon?: "trending" | "activity" | "zap";
@@ -18,10 +18,10 @@ export const CryptoCard = ({ title, value, subtitle, trend = "neutral", icon = "
     zap: Zap,
   }[icon];
 
-  const trendColors = {
-    up: "crypto-secondary",
-    down: "destructive",
-    neutral: "crypto-neutral",
+  const trendStyles = {
+    up: "text-crypto-secondary bg-crypto-secondary/10 border-crypto-secondary/20",
+    down: "text-destructive bg-destructive/10 border-destructive/20",
+    neutral: "text-crypto-neutral bg-crypto-neutral/10 border-crypto-neutral/20",
   };
 
   return (
@@ -33,9 +33,9 @@ export const CryptoCard = ({ title, value, subtitle, trend = "neutral", icon = "
         <IconComponent className="h-4 w-4 text-crypto-primary" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-foreground mb-1">{value}</div>
+        <div className="text-xl font-bold text-foreground mb-1">{value}</div>
         {subtitle && (
-          <Badge variant="secondary" className={`text-${trendColors[trend]} bg-${trendColors[trend]}/10 border-${trendColors[trend]}/20`}>
+          <Badge variant="secondary" className={trendStyles[trend]}>
             {subtitle}
           </Badge>
         )}

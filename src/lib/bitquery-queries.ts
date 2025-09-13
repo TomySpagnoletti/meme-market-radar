@@ -1,11 +1,4 @@
-// Centralized Bitquery GraphQL queries to avoid code duplication
-
-// Get date from 30 days ago in YYYY-MM-DD format
-const getThirtyDaysAgoDate = (): string => {
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-  return thirtyDaysAgo.toISOString().split('T')[0];
-};
+// Centralized Bitquery GraphQL queries
 
 // Get formatted date range for display
 export const getDataPeriodInfo = () => {
@@ -28,149 +21,77 @@ export const getDataPeriodInfo = () => {
 };
 
 export const BITQUERY_QUERIES = {
-  // V1 API Query for Ethereum, BSC, Polygon
-  getV1NetworksQuery: () => {
-    const sinceDate = getThirtyDaysAgoDate();
-    return `{
-      ethereum: ethereum(network: ethereum) {
-        dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
-          tradeAmount(in: USD)
+  getDexMarketsQuery: () => {
+    return `query DexMarkets($network: evm_network, $since: DateTime) {
+      EVM(network: $network, dataset: realtime) {
+        DEXTrades(where: {Block: {Time: {since: $since}}}) {
+          Trade {
+            Dex {
+              ProtocolFamily
+              ProtocolVersion
+            }
+          }
           count
-        }
-      }
-      bsc: ethereum(network: bsc) {
-        dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
-          tradeAmount(in: USD)
-          count
-        }
-      }
-      polygon: ethereum(network: matic) {
-        dexTrades(options: {limit: 1, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
-          tradeAmount(in: USD)
-          count
+          tradeAmount: sum(of: Trade_Buy_AmountInUSD)
         }
       }
     }`;
   },
 
-  // V2 API Query for Arbitrum, Base, Optimism, Solana - RESTORED AND FIXED
-  getV2NetworksQuery: () => {
-    const sinceDate = getThirtyDaysAgoDate();
-    return `{
-      arbitrum: EVM(dataset: archive, network: arbitrum) {
-        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
+  // Query for Solana only
+  getSolanaStatsQuery: () => {
+    return `query DexMarkets($since: DateTime) {
+      Solana(dataset: realtime) {
+        DEXTrades(where: {Block: {Time: {since: $since}}}) {
           Trade {
-            Buy {
-              AmountInUSD
+            Dex {
+              ProtocolFamily
+              ProtocolName
             }
           }
           count
-        }
-      }
-      base: EVM(dataset: archive, network: base) {
-        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
-          Trade {
-            Buy {
-              AmountInUSD
-            }
-          }
-          count
-        }
-      }
-      optimism: EVM(dataset: archive, network: optimism) {
-        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
-          Trade {
-            Buy {
-              AmountInUSD
-            }
-          }
-          count
-        }
-      }
-      solana: Solana(dataset: archive) {
-        DEXTrades(limit: {count: 1}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
-          Trade {
-            Buy {
-              AmountInUSD
-            }
-          }
-          count
+          tradeAmount: sum(of: Trade_Buy_AmountInUSD)
         }
       }
     }`;
   },
-
-  // Dynamic Protocol Query
-  getProtocolQuery: (blockchain: string) => {
-    const sinceDate = getThirtyDaysAgoDate();
-    const v1Networks = ['ethereum', 'bsc', 'polygon'];
-    const v2Networks = ['arbitrum', 'base', 'optimism', 'solana'];
-
-    if (v1Networks.includes(blockchain)) {
-      const networkMap: Record<string, string> = {
-        ethereum: 'ethereum',
-        bsc: 'bsc', 
-        polygon: 'matic'
-      };
-      return `{
-        ethereum(network: ${networkMap[blockchain]}) {
-          dexTrades(options: {limit: 5, desc: "tradeAmount"}, date: {since: "${sinceDate}"}) {
-            protocol
-            tradeAmount(in: USD)
-            count
-          }
-        }
-      }`;
-    } else if (v2Networks.includes(blockchain)) {
-      const sinceDate = getThirtyDaysAgoDate();
-      if (blockchain === 'solana') {
-        return `{
-          Solana(dataset: archive) {
-            DEXTrades(limit: {count: 5}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
-              Trade {
-                Dex {
-                  ProtocolName
-                }
-                Buy {
-                  AmountInUSD
-                }
-              }
-              count
-            }
-          }
-        }`;
-      } else {
-        return `{
-          EVM(dataset: archive, network: ${blockchain}) {
-            DEXTrades(limit: {count: 5}, orderBy: {descending: Block_Time}, where: {Block: {Date: {since: "${sinceDate}"}}}) {
-              Trade {
-                Dex {
-                  ProtocolName
-                }
-                Buy {
-                  AmountInUSD
-                }
-              }
-              count
-            }
-          }
-        }`;
-      }
-    }
-    return '';
-  }
 };
 
+import { BITQUERY_V2_ENDPOINT, BITQUERY_EAP_ENDPOINT } from './constants';
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeout = 15000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  const response = await fetch(url, {
+    ...options,
+    signal: controller.signal  
+  });
+
+  clearTimeout(id);
+  return response;
+}
+
 // API call helper function
-export const executeBitqueryQuery = async (query: string, apiKey: string) => {
-  const response = await fetch('https://graphql.bitquery.io/', {
+export const executeBitqueryQuery = async (query: string, apiKey: string, variables?: Record<string, string>) => {
+  const body: { query: string, variables?: Record<string, string> } = { query };
+  if (variables) {
+    body.variables = variables;
+  }
+
+  const response = await fetchWithTimeout(BITQUERY_V2_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify(body),
   });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+  }
 
   const data = await response.json();
   
@@ -181,17 +102,33 @@ export const executeBitqueryQuery = async (query: string, apiKey: string) => {
   return data;
 };
 
-// Blockchain configurations - ALL 7 BLOCKCHAINS RESTORED
-export const BLOCKCHAIN_CONFIG = {
-  v1Networks: ['ethereum', 'bsc', 'polygon'],
-  v2Networks: ['arbitrum', 'base', 'optimism', 'solana'],
-  supportedBlockchains: [
-    { name: "Ethereum", version: "API V1" },
-    { name: "BSC", version: "API V1" }, 
-    { name: "Polygon", version: "API V1" },
-    { name: "Arbitrum", version: "API V2" },
-    { name: "Base", version: "API V2" },
-    { name: "Optimism", version: "API V2" },
-    { name: "Solana", version: "API V2" }
-  ]
+export const executeBitqueryEapQuery = async (query: string, apiKey: string, variables?: Record<string, string>) => {
+  const body: { query: string, variables?: Record<string, string> } = { query };
+  if (variables) {
+    body.variables = variables;
+  }
+
+  const response = await fetchWithTimeout(BITQUERY_EAP_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+  }
+
+  const data = await response.json();
+  
+  if (data.errors) {
+    throw new Error(data.errors[0].message);
+  }
+
+  return data;
 };
+
+export const SUPPORTED_BLOCKCHAINS = ['ethereum', 'bsc', 'arbitrum', 'base', 'solana'];

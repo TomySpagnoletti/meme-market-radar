@@ -1,18 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CryptoCard } from "./CryptoCard";
-import { BlockchainAndDataValidator } from "./BlockchainAndDataValidator";
+import { BlockchainBreakdown } from "./BlockchainBreakdown";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, LogOut, TrendingUp } from "lucide-react";
-import { BITQUERY_QUERIES, executeBitqueryQuery, BLOCKCHAIN_CONFIG, getDataPeriodInfo } from "@/lib/bitquery-queries";
-
-interface DashboardData {
-  topBlockchain: string;
-  topProtocol: string;
-  volume24h: string;
-  transactions: string;
-}
+import { LogOut, TrendingUp, RefreshCw, Info } from "lucide-react";
+import { toast as sonnerToast } from "@/components/ui/sonner";
+// import removed: AllAnalyticsData not used here
+import { getDataPeriodInfo } from "@/lib/bitquery-queries";
+import { DataGridModal } from "./DataGridModal";
+import { getBlockchainIconUrl } from "@/lib/utils";
+import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 
 interface DashboardProps {
   apiKey: string;
@@ -20,163 +17,60 @@ interface DashboardProps {
 }
 
 export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: analyticsData, isLoading, isFetching, error, refetch } = useAnalyticsData(apiKey);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const handleRefresh = async () => {
+    // Trigger a refetch and notify the user on completion
+    const t = sonnerToast.loading("Refreshing data...");
     try {
-      // STEP 1: V1 API call for confirmed networks (Ethereum, BSC, Polygon)
-      const v1Query = BITQUERY_QUERIES.getV1NetworksQuery();
-
-      // STEP 2: V2 API call for confirmed networks (Arbitrum, Base, Optimism, Solana) - RESTORED
-      const v2Query = BITQUERY_QUERIES.getV2NetworksQuery();
-
-      // Execute both API calls in parallel
-      const [v1Data, v2Data] = await Promise.all([
-        executeBitqueryQuery(v1Query, apiKey),
-        executeBitqueryQuery(v2Query, apiKey)
-      ]);
-
-      // Process V1 data (Ethereum, BSC, Polygon)
-      const volumes: Record<string, number> = {};
-      const transactions: Record<string, number> = {};
-
-      // V1 data processing
-      BLOCKCHAIN_CONFIG.v1Networks.forEach(network => {
-        const networkData = v1Data.data?.[network];
-        const dexTrade = networkData?.dexTrades?.[0];
-        if (dexTrade) {
-          volumes[network] = dexTrade.tradeAmount || 0;
-          transactions[network] = dexTrade.count || 0;
-        } else {
-          volumes[network] = 0;
-          transactions[network] = 0;
-        }
-      });
-
-      // V1 data processing (Ethereum, BSC, Polygon)
-      BLOCKCHAIN_CONFIG.v1Networks.forEach(network => {
-        const networkData = v1Data.data?.[network];
-        const dexTrade = networkData?.dexTrades?.[0];
-        if (dexTrade) {
-          volumes[network] = dexTrade.tradeAmount || 0;
-          transactions[network] = dexTrade.count || 0;
-        } else {
-          volumes[network] = 0;
-          transactions[network] = 0;
-        }
-      });
-
-      // V2 data processing - RESTORED WITH CORRECTED STRUCTURE
-      BLOCKCHAIN_CONFIG.v2Networks.forEach(network => {
-        const networkData = v2Data.data?.[network];
-        const dexTrade = networkData?.DEXTrades?.[0];
-        if (dexTrade) {
-          volumes[network] = dexTrade.Trade?.Buy?.AmountInUSD || 0;
-          transactions[network] = dexTrade.count || 0;
-        } else {
-          volumes[network] = 0;
-          transactions[network] = 0;
-        }
-      });
-
-      console.log("All volumes:", volumes);
-      console.log("All transactions:", transactions);
-
-      // Find top blockchain by volume
-      const topBlockchain = Object.entries(volumes).reduce((a, b) => 
-        volumes[a[0]] > volumes[b[0]] ? a : b
-      )[0];
-
-      console.log("Top blockchain:", topBlockchain);
-
-      // STEP 3: Get leading protocol from winning blockchain (dynamic V1/V2)
-      const protocolQuery = BITQUERY_QUERIES.getProtocolQuery(topBlockchain);
-      const protocolData = await executeBitqueryQuery(protocolQuery, apiKey);
-
-      // Extract leading protocol
-      let topProtocol = "Unknown";
-      
-      if (BLOCKCHAIN_CONFIG.v1Networks.includes(topBlockchain)) {
-        topProtocol = protocolData.data?.ethereum?.dexTrades?.[0]?.protocol || "Unknown";
-      } else if (topBlockchain === 'solana') {
-        topProtocol = protocolData.data?.Solana?.DEXTrades?.[0]?.Trade?.Dex?.ProtocolName || "Unknown";
+      const result = await refetch({ throwOnError: false });
+      if (result.error) {
+        sonnerToast.error("Refresh failed", { id: t, description: result.error.message });
       } else {
-        topProtocol = protocolData.data?.EVM?.DEXTrades?.[0]?.Trade?.Dex?.ProtocolName || "Unknown";
+        sonnerToast.success("Data refreshed", { id: t });
       }
-
-      // Calculate totals
-      const totalVolume = Object.values(volumes).reduce((sum, vol) => sum + vol, 0);
-      const totalTransactions = Object.values(transactions).reduce((sum, tx) => sum + tx, 0);
-
-      const formattedData: DashboardData = {
-        topBlockchain: topBlockchain.charAt(0).toUpperCase() + topBlockchain.slice(1),
-        topProtocol: topProtocol,
-        volume24h: `$${totalVolume.toLocaleString()}`,
-        transactions: totalTransactions.toLocaleString()
-      };
-
-      setData(formattedData);
-
-      toast({
-        title: "Data updated successfully",
-        description: `${formattedData.topBlockchain} is leading with ${formattedData.volume24h} volume`,
-      });
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: "Error fetching data",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      sonnerToast.error("Refresh failed", { id: t, description: message });
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const overallAnalytics = useMemo(() => {
+    if (!analyticsData) return null;
+    return analyticsData.overall;
+  }, [analyticsData]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-main text-foreground flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-lg text-muted-foreground">Loading meme token analytics...</p>
-        </div>
-      </div>
-    );
-  }
+  const period = useMemo(() => getDataPeriodInfo(), []);
+
+  // Notify user if data is only partially loaded
+  useEffect(() => {
+    if (!analyticsData) return;
+    if (analyticsData.failedChains && analyticsData.failedChains.length > 0) {
+      const failed = analyticsData.failedChains
+        .map((n) => n.charAt(0).toUpperCase() + n.slice(1))
+        .join(", ");
+      sonnerToast("Partial data loaded", {
+        description: `Failed to load: ${failed}`,
+      });
+    }
+  }, [analyticsData?.failedChains]);
 
   return (
-    <div className="min-h-screen bg-gradient-main text-foreground flex flex-col">
+    <div className="min-h-screen text-foreground flex flex-col">
       {/* Header */}
       <div className="bg-gradient-hero border-b border-border/50 p-6 flex-grow">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Meme Token Analytics
+                Meme Market Radar
               </h1>
               <p className="text-muted-foreground mt-1">
                 Real-time blockchain and protocol analytics
               </p>
             </div>
             <div className="flex gap-2">
-              <Button 
-                onClick={fetchData} 
-                disabled={isLoading}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
               <Button 
                 onClick={onLogout} 
                 variant="ghost" 
@@ -193,107 +87,108 @@ export const Dashboard = ({ apiKey, onLogout }: DashboardProps) => {
           <Tabs defaultValue="analytics" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="validation">API Validation</TabsTrigger>
+              <TabsTrigger value="data-fetching">Data Breakdown</TabsTrigger>
             </TabsList>
             
             <TabsContent value="analytics" className="space-y-6 mt-6">
-              {/* Loading State */}
-              {isLoading && (
-                <div className="text-center py-12">
-                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-                  <p className="text-muted-foreground">Fetching latest blockchain data...</p>
+              {isLoading ? (
+                <div className="flex justify-center items-center mt-12">
+                  <RefreshCw className="h-6 w-6 animate-spin mr-3" />
+                  <span>Loading...</span>
                 </div>
-              )}
-
-              {/* Main Stats */}
-              {data && !isLoading && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <CryptoCard
-                    title="Top Blockchain"
-                    value={data.topBlockchain}
-                    subtitle="Highest Volume"
-                    trend="up"
-                    icon="trending"
-                  />
-                  <CryptoCard
-                    title="Leading Protocol"
-                    value={data.topProtocol}
-                    subtitle={`On ${data.topBlockchain}`}
-                    trend="up"
-                    icon="zap"
-                  />
-                  <CryptoCard
-                    title="30-Day Volume"
-                    value={data.volume24h}
-                    subtitle="Last 30 days"
-                    trend="up"
-                    icon="trending"
-                  />
-                  <CryptoCard
-                    title="Transactions"
-                    value={data.transactions}
-                    subtitle="Last 30 days"
-                    trend="neutral"
-                    icon="activity"
-                  />
-                </div>
-              )}
-
-              {/* Main Feature Card */}
-              {data && (
-                <div className="bg-gradient-hero border border-border/50 rounded-lg p-8 text-center">
-                  <div className="max-w-2xl mx-auto space-y-4">
-                    <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto">
-                      <TrendingUp className="h-8 w-8 text-primary-foreground" />
-                    </div>
-                    <h2 className="text-2xl font-bold">
-                      {data.topBlockchain} dominates the meme token market
-                    </h2>
-                    <p className="text-muted-foreground">
-                      With {data.topProtocol} as the main trading protocol, 
-                      {data.topBlockchain} currently processes the highest volume of meme tokens 
-                      with {data.volume24h} in volume over the last 30 days.
-                    </p>
+              ) : overallAnalytics && analyticsData && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <CryptoCard
+                      title="Top Blockchain"
+                      value={
+                        <div className="flex items-center gap-2">
+                          <img src={getBlockchainIconUrl(overallAnalytics.topBlockchain)} alt={`${overallAnalytics.topBlockchain} icon`} className="h-6 w-6 rounded-full" />
+                          {overallAnalytics.topBlockchain}
+                        </div>
+                      }
+                      subtitle="Highest Volume"
+                      trend="up"
+                    />
+                    <CryptoCard
+                      title="Leading Protocol"
+                      value={overallAnalytics.leadingProtocol}
+                      subtitle={`On ${overallAnalytics.topBlockchain}`}
+                      trend="up"
+                      icon="zap"
+                    />
+                    <CryptoCard
+                      title="Total Volume"
+                      value={`$${overallAnalytics.totalVolume.toLocaleString()}`}
+                      subtitle="All Blockchains"
+                      trend="up"
+                      icon="trending"
+                    />
+                    <CryptoCard
+                      title="Total Transactions"
+                      value={overallAnalytics.totalTransactions.toLocaleString()}
+                      subtitle="All Blockchains"
+                      trend="neutral"
+                      icon="activity"
+                    />
                   </div>
-                </div>
+
+                  <div className="bg-gradient-hero border border-border/50 rounded-lg p-8 text-center">
+                    <div className="max-w-2xl mx-auto space-y-4">
+                      <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto">
+                        <TrendingUp className="h-8 w-8 text-primary-foreground" />
+                      </div>
+                      <h2 className="text-2xl font-bold">
+                        {overallAnalytics.topBlockchain} dominates the trading landscape
+                      </h2>
+                      <p className="text-muted-foreground">
+                        {overallAnalytics.leadingProtocol} is the dominant protocol on {overallAnalytics.topBlockchain}.
+                        <br />
+                        Over the last 30 days, the total trading volume on this network reached ${analyticsData.blockchains[overallAnalytics.topBlockchain.toLowerCase()].totalVolume.toLocaleString()}.
+                      </p>
+                    </div>
+                  </div>
+                </>
               )}
             </TabsContent>
             
-            <TabsContent value="validation" className="space-y-4 mt-6">
-              <BlockchainAndDataValidator apiKey={apiKey} />
+            <TabsContent value="data-fetching" className="space-y-4 mt-6">
+              {isLoading ? (
+                <div className="flex justify-center items-center mt-12">
+                  <RefreshCw className="h-6 w-6 animate-spin mr-3" />
+                  <span>Loading...</span>
+                </div>
+              ) : analyticsData ? (
+                <BlockchainBreakdown allData={analyticsData} onRefresh={handleRefresh} isFetching={isFetching} error={error?.message || null} />
+              ) : (
+                <div className="text-center mt-12">
+                  <p className="text-red-500 font-semibold">Failed to fetch data.</p>
+                  <p className="text-muted-foreground text-sm">{error?.message}</p>
+                  <Button onClick={() => refetch()} className="mt-4">Try Again</Button>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
       </div>
       
-      {/* Bottom section - Always visible and sticky at bottom */}
+      {/* Bottom section */}
       <div className="bg-gradient-hero border-t border-border/50 p-6 mt-auto">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Supported Blockchains Section */}
-          <div className="bg-gradient-card border border-border/50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-3 text-center">Supported Networks</h3>
-            <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
-              {BLOCKCHAIN_CONFIG.supportedBlockchains.map((blockchain) => (
-                <div
-                  key={blockchain.name}
-                  className="bg-background/50 border border-border/30 rounded-md p-2 text-center hover:bg-crypto-primary/10 transition-colors"
-                >
-                  <span className="text-xs font-medium block">{blockchain.name}</span>
-                  <span className="text-xs text-muted-foreground">{blockchain.version}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer */}
           <div className="text-center text-sm text-muted-foreground space-y-1">
-            <p>Data provided by Bitquery • Updated on refresh</p>
+            <div className="flex items-center justify-center gap-2">
+              <p>Data provided by <a href="https://bitquery.io" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Bitquery</a></p>
+              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setIsModalOpen(true)}>
+                <Info className="h-4 w-4" />
+              </Button>
+            </div>
             <p className="text-xs">
-              Period: {getDataPeriodInfo().period} ({getDataPeriodInfo().startDate} - {getDataPeriodInfo().endDate})
+              Period: {period.period} ({period.startDate} - {period.endDate})
             </p>
           </div>
         </div>
       </div>
+      <DataGridModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} allData={analyticsData || null} />
     </div>
   );
 };

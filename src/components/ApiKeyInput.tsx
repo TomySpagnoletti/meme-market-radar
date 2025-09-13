@@ -28,9 +28,9 @@ export const ApiKeyInput = ({ onApiKeySubmit, isLoading }: ApiKeyInputProps) => 
           <div className="mx-auto w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center mb-4">
             <Key className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-xl font-bold">Meme Token Analytics Dashboard</CardTitle>
+          <CardTitle className="text-xl font-bold">Meme Market Radar</CardTitle>
           <CardDescription>
-            Connect to real-time blockchain data to discover which network dominates meme token trading
+            Your radar for the crypto market. Connect to real-time blockchain data to identify top-performing networks and protocols
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -55,6 +55,7 @@ export const ApiKeyInput = ({ onApiKeySubmit, isLoading }: ApiKeyInputProps) => 
               <Input
                 id="apiKey"
                 type="password"
+                autoComplete="off"
                 placeholder="Enter your API key..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
