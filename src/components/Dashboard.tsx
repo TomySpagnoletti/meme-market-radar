@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, TrendingUp, RefreshCw, Info } from "lucide-react";
 import { toast as sonnerToast } from "@/components/ui/sonner";
-// import removed: AllAnalyticsData not used here
 import { getDataPeriodInfo } from "@/lib/bitquery-queries";
 import { DataGridModal } from "./DataGridModal";
 import { getBlockchainIconUrl } from "@/lib/utils";
