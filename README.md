@@ -57,3 +57,7 @@ Your application will be running at `http://localhost:8080`.
 1.  Open the application in your browser.
 2.  Enter your BitQuery API key.
 3.  View the dashboard and analyze the data.
+
+## TODO
+
+- Migrate Realtime Queries to Archived or Combined Dataset to improve the time range actually limited to 8 hours...
